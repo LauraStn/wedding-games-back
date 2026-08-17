@@ -1,0 +1,22 @@
+server:
+  forward-headers-strategy: framework
+
+spring:
+  jpa:
+    show-sql: false
+
+springdoc:
+  api-docs:
+    enabled: false
+  swagger-ui:
+    enabled: false
+
+app:
+  security:
+    session-cookie:
+      secure: true
+
+logging:
+  level:
+    com.weddinggames.backend: INFO
+    org.springframework.security: WARN

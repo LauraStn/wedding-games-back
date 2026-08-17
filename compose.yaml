@@ -1,0 +1,20 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${DB_NAME:-wedding_games}
+      POSTGRES_USER: ${DB_USER:-wedding_games}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-wedding_games}
+    ports:
+      - "${DB_PORT:-5432}:5432"
+    volumes:
+      - wedding_games_postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-wedding_games} -d ${DB_NAME:-wedding_games}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  wedding_games_postgres_data:
