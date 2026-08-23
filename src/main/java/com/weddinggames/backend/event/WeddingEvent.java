@@ -6,6 +6,7 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
 import jakarta.persistence.Table;
+import java.time.LocalDate;
 import java.util.HashMap;
 import java.util.Map;
 import org.hibernate.annotations.JdbcTypeCode;
@@ -27,6 +28,21 @@ public class WeddingEvent extends BaseEntity {
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 20)
     private EventStatus status = EventStatus.DRAFT;
+
+    @Column(name = "spouse_one_name", length = 150)
+    private String spouseOneName;
+
+    @Column(name = "spouse_two_name", length = 150)
+    private String spouseTwoName;
+
+    @Column(name = "event_date")
+    private LocalDate eventDate;
+
+    @Column(name = "venue_name", length = 200)
+    private String venueName;
+
+    @Column(name = "welcome_message", length = 2000)
+    private String welcomeMessage;
 
     @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "visual_config", nullable = false, columnDefinition = "jsonb")
@@ -74,5 +90,45 @@ public class WeddingEvent extends BaseEntity {
 
     public void setVisualConfig(Map<String, Object> visualConfig) {
         this.visualConfig = visualConfig;
+    }
+
+    public String getSpouseOneName() {
+        return spouseOneName;
+    }
+
+    public void setSpouseOneName(String spouseOneName) {
+        this.spouseOneName = spouseOneName;
+    }
+
+    public String getSpouseTwoName() {
+        return spouseTwoName;
+    }
+
+    public void setSpouseTwoName(String spouseTwoName) {
+        this.spouseTwoName = spouseTwoName;
+    }
+
+    public LocalDate getEventDate() {
+        return eventDate;
+    }
+
+    public void setEventDate(LocalDate eventDate) {
+        this.eventDate = eventDate;
+    }
+
+    public String getVenueName() {
+        return venueName;
+    }
+
+    public void setVenueName(String venueName) {
+        this.venueName = venueName;
+    }
+
+    public String getWelcomeMessage() {
+        return welcomeMessage;
+    }
+
+    public void setWelcomeMessage(String welcomeMessage) {
+        this.welcomeMessage = welcomeMessage;
     }
 }

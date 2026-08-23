@@ -76,6 +76,15 @@ class RolePermissionsIT extends AbstractIntegrationTest {
     }
 
     @Test
+    void intervenantCannotConfigureTheEventTheme() throws Exception {
+        UUID eventId = seedEvent().getId();
+        Cookie intervenantCookie = loginAsNewStaff(StaffRole.INTERVENANT);
+
+        mockMvc.perform(get("/api/v1/admin/events/{eventId}", eventId).cookie(intervenantCookie))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
     void juryAndProjectionCannotAccessAdminEndpoints() throws Exception {
         Cookie juryCookie = loginAsNewStaff(StaffRole.JURY);
         Cookie projectionCookie = loginAsNewStaff(StaffRole.PROJECTION);
