@@ -29,7 +29,7 @@ class FlywayMigrationIT extends AbstractIntegrationTest {
 
         Integer appliedCount =
                 jdbcTemplate.queryForObject("SELECT count(*) FROM flyway_schema_history WHERE success = true", Integer.class);
-        assertThat(appliedCount).isGreaterThanOrEqualTo(8);
+        assertThat(appliedCount).isGreaterThanOrEqualTo(17);
     }
 
     @Test
@@ -47,7 +47,15 @@ class FlywayMigrationIT extends AbstractIntegrationTest {
                         "app_session",
                         "pairing_exclusion",
                         "lobby",
-                        "lobby_participant");
+                        "lobby_participant",
+                        "game_character",
+                        "team",
+                        "team_member",
+                        "game",
+                        "question",
+                        "answer",
+                        "vote",
+                        "score");
 
         Integer uniquePairConstraintCount = jdbcTemplate.queryForObject(
                 "SELECT count(*) FROM pg_constraint WHERE conname = 'uq_pairing_exclusion_pair'", Integer.class);
