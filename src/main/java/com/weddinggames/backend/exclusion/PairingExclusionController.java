@@ -1,5 +1,6 @@
 package com.weddinggames.backend.exclusion;
 
+import com.weddinggames.backend.exclusion.dto.PairingCheckResponse;
 import com.weddinggames.backend.exclusion.dto.PairingExclusionCreateRequest;
 import com.weddinggames.backend.exclusion.dto.PairingExclusionReasonUpdateRequest;
 import com.weddinggames.backend.exclusion.dto.PairingExclusionResponse;
@@ -17,6 +18,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
@@ -25,9 +27,12 @@ import org.springframework.web.bind.annotation.RestController;
 public class PairingExclusionController {
 
     private final PairingExclusionService pairingExclusionService;
+    private final PairingConstraintService pairingConstraintService;
 
-    public PairingExclusionController(PairingExclusionService pairingExclusionService) {
+    public PairingExclusionController(
+            PairingExclusionService pairingExclusionService, PairingConstraintService pairingConstraintService) {
         this.pairingExclusionService = pairingExclusionService;
+        this.pairingConstraintService = pairingConstraintService;
     }
 
     @GetMapping("/api/v1/admin/events/{eventId}/exclusions")
@@ -59,5 +64,15 @@ public class PairingExclusionController {
     public ResponseEntity<Void> delete(@PathVariable UUID id) {
         pairingExclusionService.delete(id);
         return ResponseEntity.noContent().build();
+    }
+
+    @GetMapping("/api/v1/admin/events/{eventId}/exclusions/check")
+    public PairingCheckResponse check(
+            @PathVariable UUID eventId,
+            @RequestParam UUID participantAId,
+            @RequestParam UUID participantBId) {
+        return new PairingCheckResponse(
+                pairingConstraintService.canPair(eventId, participantAId, participantBId),
+                pairingConstraintService.hasHardExclusion(eventId, participantAId, participantBId));
     }
 }
