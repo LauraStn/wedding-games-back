@@ -2,6 +2,7 @@ package com.weddinggames.backend.participant;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -105,6 +106,44 @@ class ParticipantAdminIT extends AbstractIntegrationTest {
         mockMvc.perform(post("/api/v1/admin/participants/{id}/disable", participantId).cookie(adminCookie))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.status").value("DISABLED"));
+    }
+
+    @Test
+    void updatesAParticipantsPresenceStatus() throws Exception {
+        Cookie adminCookie = loginAsNewStaff(StaffRole.ADMIN);
+        var eventId = weddingEventRepository.findBySlug("seed-wedding").orElseThrow().getId();
+        var participantId = participantRepository
+                .findByEventIdAndFirstNameAndLastName(eventId, "Jessika", "Dijoux")
+                .orElseThrow()
+                .getId();
+
+        mockMvc.perform(patch("/api/v1/admin/participants/{id}/status", participantId)
+                        .cookie(adminCookie)
+                        .contentType("application/json")
+                        .content("""
+                                {"status":"CONFIRMED"}
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("CONFIRMED"));
+    }
+
+    @Test
+    void updatesAParticipantsTable() throws Exception {
+        Cookie adminCookie = loginAsNewStaff(StaffRole.ADMIN);
+        var eventId = weddingEventRepository.findBySlug("seed-wedding").orElseThrow().getId();
+        var participantId = participantRepository
+                .findByEventIdAndFirstNameAndLastName(eventId, "Jessika", "Dijoux")
+                .orElseThrow()
+                .getId();
+
+        mockMvc.perform(patch("/api/v1/admin/participants/{id}/table", participantId)
+                        .cookie(adminCookie)
+                        .contentType("application/json")
+                        .content("""
+                                {"tableLabel":"Table 12"}
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.tableLabel").value("Table 12"));
     }
 
     @Test

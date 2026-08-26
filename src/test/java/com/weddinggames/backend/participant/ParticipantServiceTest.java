@@ -73,4 +73,28 @@ class ParticipantServiceTest {
         verify(participant).setStatus(ParticipantStatus.DISABLED);
         assertThat(result).isSameAs(participant);
     }
+
+    @Test
+    void updatingStatusSetsTheRequestedStatus() {
+        UUID id = UUID.randomUUID();
+        Participant participant = mock(Participant.class);
+        when(participantRepository.findById(id)).thenReturn(Optional.of(participant));
+
+        Participant result = service.updateStatus(id, ParticipantStatus.ABSENT);
+
+        verify(participant).setStatus(ParticipantStatus.ABSENT);
+        assertThat(result).isSameAs(participant);
+    }
+
+    @Test
+    void updatingTableSetsTheRequestedTableLabel() {
+        UUID id = UUID.randomUUID();
+        Participant participant = mock(Participant.class);
+        when(participantRepository.findById(id)).thenReturn(Optional.of(participant));
+
+        Participant result = service.updateTable(id, "Table 7");
+
+        verify(participant).setTableLabel("Table 7");
+        assertThat(result).isSameAs(participant);
+    }
 }

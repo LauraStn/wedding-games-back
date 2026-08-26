@@ -92,4 +92,18 @@ public class ParticipantService {
         participant.setStatus(ParticipantStatus.DISABLED);
         return participant;
     }
+
+    @Transactional
+    public Participant updateStatus(UUID id, ParticipantStatus status) {
+        Participant participant = get(id);
+        participant.setStatus(status);
+        return participant;
+    }
+
+    @Transactional
+    public Participant updateTable(UUID id, String tableLabel) {
+        Participant participant = get(id);
+        participant.setTableLabel(tableLabel);
+        return participant;
+    }
 }

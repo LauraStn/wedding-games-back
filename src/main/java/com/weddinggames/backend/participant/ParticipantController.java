@@ -2,6 +2,8 @@ package com.weddinggames.backend.participant;
 
 import com.weddinggames.backend.participant.dto.ParticipantCreateRequest;
 import com.weddinggames.backend.participant.dto.ParticipantResponse;
+import com.weddinggames.backend.participant.dto.ParticipantStatusUpdateRequest;
+import com.weddinggames.backend.participant.dto.ParticipantTableUpdateRequest;
 import com.weddinggames.backend.participant.dto.ParticipantUpdateRequest;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
@@ -12,6 +14,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
@@ -70,5 +73,17 @@ public class ParticipantController {
     @PostMapping("/participants/{id}/disable")
     public ParticipantResponse disable(@PathVariable UUID id) {
         return ParticipantResponse.from(participantService.disable(id));
+    }
+
+    @PatchMapping("/participants/{id}/status")
+    public ParticipantResponse updateStatus(
+            @PathVariable UUID id, @Valid @RequestBody ParticipantStatusUpdateRequest request) {
+        return ParticipantResponse.from(participantService.updateStatus(id, request.status()));
+    }
+
+    @PatchMapping("/participants/{id}/table")
+    public ParticipantResponse updateTable(
+            @PathVariable UUID id, @Valid @RequestBody ParticipantTableUpdateRequest request) {
+        return ParticipantResponse.from(participantService.updateTable(id, request.tableLabel()));
     }
 }
