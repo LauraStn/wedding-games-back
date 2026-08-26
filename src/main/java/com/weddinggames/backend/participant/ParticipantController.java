@@ -17,6 +17,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
@@ -32,8 +33,13 @@ public class ParticipantController {
     }
 
     @GetMapping("/events/{eventId}/participants")
-    public List<ParticipantResponse> list(@PathVariable UUID eventId) {
-        return participantService.listByEvent(eventId).stream()
+    public List<ParticipantResponse> list(
+            @PathVariable UUID eventId,
+            @RequestParam(required = false) ParticipantStatus status,
+            @RequestParam(required = false) String tableLabel,
+            @RequestParam(required = false) ParticipantType participantType,
+            @RequestParam(required = false) String query) {
+        return participantService.search(eventId, status, tableLabel, participantType, query).stream()
                 .map(ParticipantResponse::from)
                 .toList();
     }
@@ -59,5 +65,10 @@ public class ParticipantController {
     public ResponseEntity<Void> delete(@PathVariable UUID id) {
         participantService.delete(id);
         return ResponseEntity.noContent().build();
+    }
+
+    @PostMapping("/participants/{id}/disable")
+    public ParticipantResponse disable(@PathVariable UUID id) {
+        return ParticipantResponse.from(participantService.disable(id));
     }
 }

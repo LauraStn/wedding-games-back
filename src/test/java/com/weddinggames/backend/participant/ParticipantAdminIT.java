@@ -1,5 +1,7 @@
 package com.weddinggames.backend.participant;
 
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -15,6 +17,9 @@ class ParticipantAdminIT extends AbstractIntegrationTest {
 
     @Autowired
     private WeddingEventRepository weddingEventRepository;
+
+    @Autowired
+    private ParticipantRepository participantRepository;
 
     @Test
     void rejectsAnInvalidParticipantCreationRequestWithAConsistentErrorEnvelope() throws Exception {
@@ -53,5 +58,66 @@ class ParticipantAdminIT extends AbstractIntegrationTest {
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.displayName").value("Marie Curie"))
                 .andExpect(jsonPath("$.status").value("INVITED"));
+    }
+
+    @Test
+    void filtersParticipantsByTableLabelAndFreeTextSearch() throws Exception {
+        Cookie adminCookie = loginAsNewStaff(StaffRole.ADMIN);
+        var eventId = weddingEventRepository.findBySlug("seed-wedding").orElseThrow().getId();
+
+        mockMvc.perform(post("/api/v1/admin/events/{eventId}/participants", eventId)
+                        .cookie(adminCookie)
+                        .contentType("application/json")
+                        .content(
+                                """
+                                {"firstName":"Alice","lastName":"Wonderland","displayName":"Alice Wonderland","tableLabel":"Table 5","participantType":"GUEST"}
+                                """))
+                .andExpect(status().isCreated());
+
+        mockMvc.perform(get("/api/v1/admin/events/{eventId}/participants", eventId)
+                        .cookie(adminCookie)
+                        .param("tableLabel", "Table 5"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[*].displayName", org.hamcrest.Matchers.hasItem("Alice Wonderland")));
+
+        mockMvc.perform(get("/api/v1/admin/events/{eventId}/participants", eventId)
+                        .cookie(adminCookie)
+                        .param("query", "wonderland"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[*].displayName", org.hamcrest.Matchers.hasItem("Alice Wonderland")));
+
+        mockMvc.perform(get("/api/v1/admin/events/{eventId}/participants", eventId)
+                        .cookie(adminCookie)
+                        .param("tableLabel", "Table 99"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[*].displayName", org.hamcrest.Matchers.not(org.hamcrest.Matchers.hasItem("Alice Wonderland"))));
+    }
+
+    @Test
+    void disablingAParticipantSetsItsStatus() throws Exception {
+        Cookie adminCookie = loginAsNewStaff(StaffRole.ADMIN);
+        var eventId = weddingEventRepository.findBySlug("seed-wedding").orElseThrow().getId();
+        var participantId = participantRepository
+                .findByEventIdAndFirstNameAndLastName(eventId, "Jessika", "Dijoux")
+                .orElseThrow()
+                .getId();
+
+        mockMvc.perform(post("/api/v1/admin/participants/{id}/disable", participantId).cookie(adminCookie))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("DISABLED"));
+    }
+
+    @Test
+    void deletingAParticipantInvolvedInAHardExclusionIsRefused() throws Exception {
+        Cookie adminCookie = loginAsNewStaff(StaffRole.ADMIN);
+        var eventId = weddingEventRepository.findBySlug("seed-wedding").orElseThrow().getId();
+        var jessikaId = participantRepository
+                .findByEventIdAndFirstNameAndLastName(eventId, "Jessika", "Dijoux")
+                .orElseThrow()
+                .getId();
+
+        mockMvc.perform(delete("/api/v1/admin/participants/{id}", jessikaId).cookie(adminCookie))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.code").value("PARTICIPANT_HAS_HARD_EXCLUSION"));
     }
 }

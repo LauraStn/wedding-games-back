@@ -14,4 +14,10 @@ public interface PairingExclusionRepository extends JpaRepository<PairingExclusi
             UUID eventId, UUID participantAId, UUID participantBId);
 
     boolean existsByEventIdAndParticipantAIdAndParticipantBId(UUID eventId, UUID participantAId, UUID participantBId);
+
+    boolean existsByExclusionTypeAndParticipantAIdOrExclusionTypeAndParticipantBId(
+            ExclusionType exclusionTypeA,
+            UUID participantAId,
+            ExclusionType exclusionTypeB,
+            UUID participantBId);
 }

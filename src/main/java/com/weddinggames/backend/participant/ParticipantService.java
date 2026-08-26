@@ -1,8 +1,11 @@
 package com.weddinggames.backend.participant;
 
+import com.weddinggames.backend.common.exception.BusinessRuleViolationException;
 import com.weddinggames.backend.common.exception.NotFoundException;
 import com.weddinggames.backend.event.WeddingEvent;
 import com.weddinggames.backend.event.WeddingEventRepository;
+import com.weddinggames.backend.exclusion.ExclusionType;
+import com.weddinggames.backend.exclusion.PairingExclusionRepository;
 import com.weddinggames.backend.participant.dto.ParticipantCreateRequest;
 import com.weddinggames.backend.participant.dto.ParticipantUpdateRequest;
 import java.util.List;
@@ -15,16 +18,26 @@ public class ParticipantService {
 
     private final ParticipantRepository participantRepository;
     private final WeddingEventRepository weddingEventRepository;
+    private final PairingExclusionRepository pairingExclusionRepository;
 
     public ParticipantService(
-            ParticipantRepository participantRepository, WeddingEventRepository weddingEventRepository) {
+            ParticipantRepository participantRepository,
+            WeddingEventRepository weddingEventRepository,
+            PairingExclusionRepository pairingExclusionRepository) {
         this.participantRepository = participantRepository;
         this.weddingEventRepository = weddingEventRepository;
+        this.pairingExclusionRepository = pairingExclusionRepository;
     }
 
     @Transactional(readOnly = true)
     public List<Participant> listByEvent(UUID eventId) {
         return participantRepository.findByEventId(eventId);
+    }
+
+    @Transactional(readOnly = true)
+    public List<Participant> search(
+            UUID eventId, ParticipantStatus status, String tableLabel, ParticipantType participantType, String query) {
+        return participantRepository.search(eventId, status, tableLabel, participantType, query);
     }
 
     @Transactional(readOnly = true)
@@ -64,6 +77,19 @@ public class ParticipantService {
         if (!participantRepository.existsById(id)) {
             throw new NotFoundException("Participant introuvable.");
         }
+        if (pairingExclusionRepository.existsByExclusionTypeAndParticipantAIdOrExclusionTypeAndParticipantBId(
+                ExclusionType.HARD, id, ExclusionType.HARD, id)) {
+            throw new BusinessRuleViolationException(
+                    "PARTICIPANT_HAS_HARD_EXCLUSION",
+                    "Ce participant est implique dans une exclusion absolue (HARD) et ne peut pas etre supprime.");
+        }
         participantRepository.deleteById(id);
+    }
+
+    @Transactional
+    public Participant disable(UUID id) {
+        Participant participant = get(id);
+        participant.setStatus(ParticipantStatus.DISABLED);
+        return participant;
     }
 }

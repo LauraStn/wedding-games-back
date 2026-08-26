@@ -5,5 +5,6 @@ public enum ParticipantStatus {
     CONFIRMED,
     CONNECTED,
     PAUSED,
-    ABSENT
+    ABSENT,
+    DISABLED
 }
