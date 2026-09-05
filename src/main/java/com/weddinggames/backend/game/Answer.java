@@ -5,6 +5,8 @@ import com.weddinggames.backend.participant.Participant;
 import com.weddinggames.backend.team.Team;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
@@ -37,6 +39,10 @@ public class Answer extends BaseEntity {
     @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "controlling_participant_id")
     private Participant controllingParticipant;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "moderation_status", nullable = false, length = 20)
+    private AnswerModerationStatus moderationStatus = AnswerModerationStatus.PENDING;
 
     protected Answer() {}
 
@@ -77,5 +83,25 @@ public class Answer extends BaseEntity {
 
     public void setControllingParticipant(Participant controllingParticipant) {
         this.controllingParticipant = controllingParticipant;
+    }
+
+    public AnswerModerationStatus getModerationStatus() {
+        return moderationStatus;
+    }
+
+    public void accept() {
+        this.moderationStatus = AnswerModerationStatus.ACCEPTED;
+    }
+
+    public void hide() {
+        this.moderationStatus = AnswerModerationStatus.HIDDEN;
+    }
+
+    /** Resets this team's answer for a fresh attempt: cleared content, no one in control, back to PENDING. */
+    public void relaunch() {
+        this.content = "";
+        this.controllingParticipant = null;
+        this.submittedAt = null;
+        this.moderationStatus = AnswerModerationStatus.PENDING;
     }
 }
