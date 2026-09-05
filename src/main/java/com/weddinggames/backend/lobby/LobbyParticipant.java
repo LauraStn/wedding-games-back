@@ -51,7 +51,15 @@ public class LobbyParticipant extends BaseEntity {
 
     public void heartbeat(Instant now) {
         this.lastActivityAt = now;
-        this.connectionStatus = LobbyConnectionStatus.CONNECTED;
+        // A routine presence ping must not silently downgrade an explicit "I'm ready" declaration.
+        if (this.connectionStatus != LobbyConnectionStatus.READY) {
+            this.connectionStatus = LobbyConnectionStatus.CONNECTED;
+        }
+    }
+
+    public void markReady(Instant now) {
+        this.lastActivityAt = now;
+        this.connectionStatus = LobbyConnectionStatus.READY;
     }
 
     public void markLate() {

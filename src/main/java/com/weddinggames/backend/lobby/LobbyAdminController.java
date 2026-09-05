@@ -30,8 +30,6 @@ public class LobbyAdminController {
 
     @GetMapping("/participants")
     public List<LobbyParticipantResponse> participants(@PathVariable UUID eventId) {
-        return lobbyService.listParticipants(eventId).stream()
-                .map(LobbyParticipantResponse::from)
-                .toList();
+        return lobbyService.listParticipantViews(eventId);
     }
 }

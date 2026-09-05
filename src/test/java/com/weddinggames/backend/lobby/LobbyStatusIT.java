@@ -109,4 +109,76 @@ class LobbyStatusIT extends AbstractIntegrationTest {
 
         mockMvc.perform(get("/api/v1/lobby").cookie(intervenantCookie)).andExpect(status().isForbidden());
     }
+
+    @Test
+    void markingReadyIsDistinctFromConnectedAndSurvivesAHeartbeat() throws Exception {
+        Cookie adminCookie = loginAsNewStaff(StaffRole.ADMIN);
+        WeddingEvent event = createEvent();
+        Participant participant = createParticipant(event);
+        Cookie participantCookie = loginAsParticipant(participant.getId());
+
+        mockMvc.perform(post("/api/v1/lobby/ready").cookie(participantCookie))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.connectionStatus").value("READY"));
+
+        // A routine heartbeat afterwards must not downgrade the explicit "ready" declaration.
+        mockMvc.perform(post("/api/v1/lobby/heartbeat").cookie(participantCookie))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.connectionStatus").value("READY"));
+
+        mockMvc.perform(get("/api/v1/staff/events/{eventId}/lobby/participants", event.getId()).cookie(adminCookie))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].connectionStatus").value("READY"));
+    }
+
+    @Test
+    void flagsTwoParticipantsWithTheSameNameAsPossibleDuplicatesInTheStaffView() throws Exception {
+        Cookie adminCookie = loginAsNewStaff(StaffRole.ADMIN);
+        WeddingEvent event = createEvent();
+        Participant first = participantRepository.save(
+                new Participant(event, "Marie", "Curie", "Marie Curie", null, ParticipantType.GUEST));
+        Participant second = participantRepository.save(
+                new Participant(event, "marie", "curie", "Marie C.", null, ParticipantType.GUEST));
+        Cookie firstCookie = loginAsParticipant(first.getId());
+        Cookie secondCookie = loginAsParticipant(second.getId());
+
+        mockMvc.perform(post("/api/v1/lobby/heartbeat").cookie(firstCookie)).andExpect(status().isOk());
+        mockMvc.perform(post("/api/v1/lobby/heartbeat").cookie(secondCookie)).andExpect(status().isOk());
+
+        mockMvc.perform(get("/api/v1/staff/events/{eventId}/lobby/participants", event.getId()).cookie(adminCookie))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].possibleDuplicate").value(true))
+                .andExpect(jsonPath("$[1].possibleDuplicate").value(true));
+    }
+
+    @Test
+    void flagsAParticipantLoggedInFromTwoDevicesAsPossibleQrReuse() throws Exception {
+        Cookie adminCookie = loginAsNewStaff(StaffRole.ADMIN);
+        WeddingEvent event = createEvent();
+        Participant participant = createParticipant(event);
+        // Two independent sessions for the same participant, as if two devices used the same QR/code.
+        Cookie deviceOne = loginAsParticipant(participant.getId());
+        loginAsParticipant(participant.getId());
+
+        mockMvc.perform(post("/api/v1/lobby/heartbeat").cookie(deviceOne)).andExpect(status().isOk());
+
+        mockMvc.perform(get("/api/v1/staff/events/{eventId}/lobby/participants", event.getId()).cookie(adminCookie))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].possibleQrReuse").value(true));
+    }
+
+    @Test
+    void doesNotFlagASingleSessionParticipantAsQrReuseOrDuplicate() throws Exception {
+        Cookie adminCookie = loginAsNewStaff(StaffRole.ADMIN);
+        WeddingEvent event = createEvent();
+        Participant participant = createParticipant(event);
+        Cookie participantCookie = loginAsParticipant(participant.getId());
+
+        mockMvc.perform(post("/api/v1/lobby/heartbeat").cookie(participantCookie)).andExpect(status().isOk());
+
+        mockMvc.perform(get("/api/v1/staff/events/{eventId}/lobby/participants", event.getId()).cookie(adminCookie))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].possibleDuplicate").value(false))
+                .andExpect(jsonPath("$[0].possibleQrReuse").value(false));
+    }
 }

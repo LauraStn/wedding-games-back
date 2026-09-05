@@ -10,14 +10,19 @@ public record LobbyParticipantResponse(
         String displayName,
         LobbyConnectionStatus connectionStatus,
         Instant arrivedAt,
-        Instant lastActivityAt) {
+        Instant lastActivityAt,
+        boolean possibleDuplicate,
+        boolean possibleQrReuse) {
 
-    public static LobbyParticipantResponse from(LobbyParticipant lobbyParticipant) {
+    public static LobbyParticipantResponse from(
+            LobbyParticipant lobbyParticipant, boolean possibleDuplicate, boolean possibleQrReuse) {
         return new LobbyParticipantResponse(
                 lobbyParticipant.getParticipant().getId(),
                 lobbyParticipant.getParticipant().getDisplayName(),
                 lobbyParticipant.getConnectionStatus(),
                 lobbyParticipant.getArrivedAt(),
-                lobbyParticipant.getLastActivityAt());
+                lobbyParticipant.getLastActivityAt(),
+                possibleDuplicate,
+                possibleQrReuse);
     }
 }

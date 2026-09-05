@@ -1,6 +1,6 @@
 package com.weddinggames.backend.lobby;
 
-import com.weddinggames.backend.lobby.dto.LobbyParticipantResponse;
+import com.weddinggames.backend.lobby.dto.LobbyHeartbeatResponse;
 import com.weddinggames.backend.lobby.dto.LobbyParticipantStatusResponse;
 import com.weddinggames.backend.security.AuthenticatedActor;
 import io.swagger.v3.oas.annotations.Operation;
@@ -26,8 +26,14 @@ public class LobbyParticipantController {
 
     @PostMapping("/heartbeat")
     @Operation(summary = "Signale la presence du participant courant dans le salon (a appeler periodiquement)")
-    public LobbyParticipantResponse heartbeat(@AuthenticationPrincipal AuthenticatedActor actor) {
-        return LobbyParticipantResponse.from(lobbyService.heartbeat(actor.participantId()));
+    public LobbyHeartbeatResponse heartbeat(@AuthenticationPrincipal AuthenticatedActor actor) {
+        return LobbyHeartbeatResponse.from(lobbyService.heartbeat(actor.participantId()));
+    }
+
+    @PostMapping("/ready")
+    @Operation(summary = "Declare le participant courant pret, distinct d'une simple presence connectee")
+    public LobbyHeartbeatResponse ready(@AuthenticationPrincipal AuthenticatedActor actor) {
+        return LobbyHeartbeatResponse.from(lobbyService.markReady(actor.participantId()));
     }
 
     @GetMapping

@@ -61,18 +61,16 @@ public class LobbyStaffController {
 
     @GetMapping("/participants")
     public List<LobbyParticipantResponse> participants(@PathVariable UUID eventId) {
-        return lobbyService.listParticipants(eventId).stream()
-                .map(LobbyParticipantResponse::from)
-                .toList();
+        return lobbyService.listParticipantViews(eventId);
     }
 
     @PostMapping("/participants/{participantId}/late")
     public LobbyParticipantResponse markLate(@PathVariable UUID eventId, @PathVariable UUID participantId) {
-        return LobbyParticipantResponse.from(lobbyService.markLate(eventId, participantId));
+        return lobbyService.toView(eventId, lobbyService.markLate(eventId, participantId));
     }
 
     @PostMapping("/participants/{participantId}/admit")
     public LobbyParticipantResponse admit(@PathVariable UUID eventId, @PathVariable UUID participantId) {
-        return LobbyParticipantResponse.from(lobbyService.admit(eventId, participantId));
+        return lobbyService.toView(eventId, lobbyService.admit(eventId, participantId));
     }
 }
