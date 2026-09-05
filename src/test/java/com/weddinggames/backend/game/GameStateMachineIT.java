@@ -90,6 +90,44 @@ class GameStateMachineIT extends AbstractIntegrationTest {
     }
 
     @Test
+    void intervenantCanDiscoverGamesAndQuestionsToPilotWithoutKnowingTheirIdsUpfront() throws Exception {
+        Cookie adminCookie = loginAsNewStaff(StaffRole.ADMIN);
+        WeddingEvent event = createEvent();
+        UUID gameId = createGame(adminCookie, event.getId());
+        var questionResult = mockMvc.perform(post("/api/v1/admin/games/{gameId}/questions", gameId)
+                        .cookie(adminCookie)
+                        .contentType("application/json")
+                        .content("""
+                                {"prompt":"Quel est le comble ?","sequence":0}
+                                """))
+                .andExpect(status().isCreated())
+                .andReturn();
+        UUID questionId = UUID.fromString(objectMapper
+                .readTree(questionResult.getResponse().getContentAsString())
+                .get("id")
+                .asText());
+        Cookie intervenantCookie = loginAsNewStaff(StaffRole.INTERVENANT);
+
+        mockMvc.perform(get("/api/v1/staff/events/{eventId}/games", event.getId()).cookie(intervenantCookie))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$", org.hamcrest.Matchers.hasSize(1)))
+                .andExpect(jsonPath("$[0].id").value(gameId.toString()));
+
+        mockMvc.perform(get("/api/v1/staff/games/{gameId}", gameId).cookie(intervenantCookie))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(gameId.toString()));
+
+        mockMvc.perform(get("/api/v1/staff/games/{gameId}/questions", gameId).cookie(intervenantCookie))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$", org.hamcrest.Matchers.hasSize(1)))
+                .andExpect(jsonPath("$[0].id").value(questionId.toString()));
+
+        mockMvc.perform(get("/api/v1/staff/questions/{questionId}", questionId).cookie(intervenantCookie))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(questionId.toString()));
+    }
+
+    @Test
     void nonStaffCannotDriveTheGameStateMachine() throws Exception {
         Cookie adminCookie = loginAsNewStaff(StaffRole.ADMIN);
         WeddingEvent event = createEvent();
