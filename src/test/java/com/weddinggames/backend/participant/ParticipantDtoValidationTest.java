@@ -32,7 +32,7 @@ class ParticipantDtoValidationTest {
     @Test
     void rejectsBlankFirstName() {
         ParticipantCreateRequest request =
-                new ParticipantCreateRequest("", "Dijoux", "Jessika Dijoux", null, ParticipantType.GUEST);
+                new ParticipantCreateRequest("", "Dijoux", "Jessika Dijoux", null, ParticipantType.GUEST, null);
 
         Set<ConstraintViolation<ParticipantCreateRequest>> violations = validator.validate(request);
 
@@ -41,7 +41,8 @@ class ParticipantDtoValidationTest {
 
     @Test
     void rejectsMissingParticipantType() {
-        ParticipantCreateRequest request = new ParticipantCreateRequest("Jessika", "Dijoux", "Jessika Dijoux", null, null);
+        ParticipantCreateRequest request =
+                new ParticipantCreateRequest("Jessika", "Dijoux", "Jessika Dijoux", null, null, null);
 
         Set<ConstraintViolation<ParticipantCreateRequest>> violations = validator.validate(request);
 
@@ -51,7 +52,7 @@ class ParticipantDtoValidationTest {
     @Test
     void acceptsAValidRequest() {
         ParticipantCreateRequest request = new ParticipantCreateRequest(
-                "Jessika", "Dijoux", "Jessika Dijoux", "Table 4", ParticipantType.GUEST);
+                "Jessika", "Dijoux", "Jessika Dijoux", "Table 4", ParticipantType.GUEST, null);
 
         assertThat(validator.validate(request)).isEmpty();
     }

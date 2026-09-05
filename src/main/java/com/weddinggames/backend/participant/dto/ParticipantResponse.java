@@ -1,5 +1,6 @@
 package com.weddinggames.backend.participant.dto;
 
+import com.weddinggames.backend.common.Gender;
 import com.weddinggames.backend.participant.Participant;
 import com.weddinggames.backend.participant.ParticipantStatus;
 import com.weddinggames.backend.participant.ParticipantType;
@@ -15,6 +16,7 @@ public record ParticipantResponse(
         String tableLabel,
         ParticipantType participantType,
         ParticipantStatus status,
+        Gender gender,
         int totalPoints,
         int totalWins,
         Instant createdAt,
@@ -30,6 +32,7 @@ public record ParticipantResponse(
                 participant.getTableLabel(),
                 participant.getParticipantType(),
                 participant.getStatus(),
+                participant.getGender(),
                 participant.getTotalPoints(),
                 participant.getTotalWins(),
                 participant.getCreatedAt(),

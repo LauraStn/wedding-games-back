@@ -57,6 +57,7 @@ public class ParticipantService {
                 request.displayName(),
                 request.tableLabel(),
                 request.participantType());
+        participant.setGender(request.gender());
         return participantRepository.save(participant);
     }
 
@@ -69,6 +70,7 @@ public class ParticipantService {
         participant.setTableLabel(request.tableLabel());
         participant.setParticipantType(request.participantType());
         participant.setStatus(request.status());
+        participant.setGender(request.gender());
         return participant;
     }
 

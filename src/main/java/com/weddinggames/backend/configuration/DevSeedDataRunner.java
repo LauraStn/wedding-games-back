@@ -66,7 +66,7 @@ public class DevSeedDataRunner implements ApplicationRunner {
                 .orElseGet(() -> participantService.create(
                         eventId,
                         new ParticipantCreateRequest(
-                                firstName, lastName, firstName + " " + lastName, null, ParticipantType.GUEST)));
+                                firstName, lastName, firstName + " " + lastName, null, ParticipantType.GUEST, null)));
     }
 
     private void ensureHardExclusion(UUID eventId, UUID participantAId, UUID participantBId, String reason) {

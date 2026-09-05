@@ -78,10 +78,10 @@ class GameEngineSchemaIT extends AbstractIntegrationTest {
         GameCharacter character = gameCharacterRepository.save(
                 new GameCharacter(event, "Detective-" + UUID.randomUUID(), "Mène l'enquête", null));
 
-        Team team = new Team(event);
-        team.setCharacter(character);
-        team = teamRepository.save(team);
-        TeamMember membership = teamMemberRepository.save(new TeamMember(team, jessika));
+        Team team = teamRepository.save(new Team(event));
+        TeamMember membership = new TeamMember(team, jessika);
+        membership.setCharacter(character);
+        membership = teamMemberRepository.save(membership);
 
         Game game = gameRepository.save(new Game(event, GameType.QUIZ, "Quiz du dessert", 0));
         Question question = questionRepository.save(
@@ -107,6 +107,43 @@ class GameEngineSchemaIT extends AbstractIntegrationTest {
 
         Team secondTeam = teamRepository.save(new Team(event));
         assertThatThrownBy(() -> teamMemberRepository.saveAndFlush(new TeamMember(secondTeam, sandrine)))
+                .isInstanceOf(DataIntegrityViolationException.class);
+    }
+
+    @Test
+    void aCharacterCanNeverBeAssignedToTwoTeamMembersAtOnce() {
+        // Fresh participants of its own, rather than the shared Jessika/Sandrine/Patrick seed fixtures
+        // other tests in this class also assign to a team: this class shares one real Postgres instance
+        // across all tests (no per-test rollback), so reusing them here could accidentally trip the
+        // unrelated "one team per participant" constraint instead of the one this test targets.
+        WeddingEvent event = seedEvent();
+        Participant first = participantRepository.save(new com.weddinggames.backend.participant.Participant(
+                event,
+                "First",
+                "Test-" + UUID.randomUUID(),
+                "First Test",
+                null,
+                com.weddinggames.backend.participant.ParticipantType.GUEST));
+        Participant second = participantRepository.save(new com.weddinggames.backend.participant.Participant(
+                event,
+                "Second",
+                "Test-" + UUID.randomUUID(),
+                "Second Test",
+                null,
+                com.weddinggames.backend.participant.ParticipantType.GUEST));
+        GameCharacter character = gameCharacterRepository.save(
+                new GameCharacter(event, "Heroine-" + UUID.randomUUID(), null, null));
+
+        Team firstTeam = teamRepository.save(new Team(event));
+        TeamMember firstMembership = new TeamMember(firstTeam, first);
+        firstMembership.setCharacter(character);
+        teamMemberRepository.saveAndFlush(firstMembership);
+
+        Team secondTeam = teamRepository.save(new Team(event));
+        TeamMember secondMembership = new TeamMember(secondTeam, second);
+        secondMembership.setCharacter(character);
+
+        assertThatThrownBy(() -> teamMemberRepository.saveAndFlush(secondMembership))
                 .isInstanceOf(DataIntegrityViolationException.class);
     }
 

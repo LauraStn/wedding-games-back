@@ -1,9 +1,12 @@
 package com.weddinggames.backend.character;
 
 import com.weddinggames.backend.common.BaseEntity;
+import com.weddinggames.backend.common.Gender;
 import com.weddinggames.backend.event.WeddingEvent;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
@@ -29,6 +32,11 @@ public class GameCharacter extends BaseEntity {
 
     @Column(nullable = false)
     private boolean active = true;
+
+    /** Optional: only used to bias the matchmaking's character assignment. Null = no preference. */
+    @Enumerated(EnumType.STRING)
+    @Column(length = 10)
+    private Gender gender;
 
     protected GameCharacter() {}
 
@@ -73,5 +81,13 @@ public class GameCharacter extends BaseEntity {
 
     public void setActive(boolean active) {
         this.active = active;
+    }
+
+    public Gender getGender() {
+        return gender;
+    }
+
+    public void setGender(Gender gender) {
+        this.gender = gender;
     }
 }

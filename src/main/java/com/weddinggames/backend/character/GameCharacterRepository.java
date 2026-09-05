@@ -7,4 +7,6 @@ import org.springframework.data.jpa.repository.JpaRepository;
 public interface GameCharacterRepository extends JpaRepository<GameCharacter, UUID> {
 
     List<GameCharacter> findByEventId(UUID eventId);
+
+    boolean existsByEventIdAndName(UUID eventId, String name);
 }

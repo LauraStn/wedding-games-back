@@ -1,5 +1,6 @@
 package com.weddinggames.backend.participant.dto;
 
+import com.weddinggames.backend.common.Gender;
 import com.weddinggames.backend.participant.ParticipantStatus;
 import com.weddinggames.backend.participant.ParticipantType;
 import jakarta.validation.constraints.NotBlank;
@@ -12,4 +13,5 @@ public record ParticipantUpdateRequest(
         @NotBlank @Size(max = 150) String displayName,
         @Size(max = 50) String tableLabel,
         @NotNull ParticipantType participantType,
-        @NotNull ParticipantStatus status) {}
+        @NotNull ParticipantStatus status,
+        Gender gender) {}
