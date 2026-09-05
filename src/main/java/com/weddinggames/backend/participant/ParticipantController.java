@@ -9,7 +9,10 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import java.util.List;
 import java.util.UUID;
+import org.springframework.http.ContentDisposition;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -30,9 +33,12 @@ import org.springframework.web.bind.annotation.RestController;
 public class ParticipantController {
 
     private final ParticipantService participantService;
+    private final ParticipantExportService participantExportService;
 
-    public ParticipantController(ParticipantService participantService) {
+    public ParticipantController(
+            ParticipantService participantService, ParticipantExportService participantExportService) {
         this.participantService = participantService;
+        this.participantExportService = participantExportService;
     }
 
     @GetMapping("/events/{eventId}/participants")
@@ -45,6 +51,22 @@ public class ParticipantController {
         return participantService.search(eventId, status, tableLabel, participantType, query).stream()
                 .map(ParticipantResponse::from)
                 .toList();
+    }
+
+    @GetMapping("/events/{eventId}/participants/export")
+    public ResponseEntity<byte[]> export(
+            @PathVariable UUID eventId,
+            @RequestParam(required = false) ParticipantStatus status,
+            @RequestParam(required = false) String tableLabel,
+            @RequestParam(required = false) ParticipantType participantType,
+            @RequestParam(required = false) String query) {
+        byte[] csv = participantExportService.exportCsv(eventId, status, tableLabel, participantType, query);
+        return ResponseEntity.ok()
+                .contentType(MediaType.parseMediaType("text/csv;charset=UTF-8"))
+                .header(
+                        HttpHeaders.CONTENT_DISPOSITION,
+                        ContentDisposition.attachment().filename("participants.csv").build().toString())
+                .body(csv);
     }
 
     @PostMapping("/events/{eventId}/participants")

@@ -147,6 +147,22 @@ class ParticipantAdminIT extends AbstractIntegrationTest {
     }
 
     @Test
+    void exportsTheParticipantListAsDownloadableCsv() throws Exception {
+        Cookie adminCookie = loginAsNewStaff(StaffRole.ADMIN);
+        var eventId = weddingEventRepository.findBySlug("seed-wedding").orElseThrow().getId();
+
+        mockMvc.perform(get("/api/v1/admin/events/{eventId}/participants/export", eventId).cookie(adminCookie))
+                .andExpect(status().isOk())
+                .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.header()
+                        .string("Content-Disposition", org.hamcrest.Matchers.containsString("participants.csv")))
+                .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.content()
+                        .string(org.hamcrest.Matchers.allOf(
+                                org.hamcrest.Matchers.startsWith(
+                                        "prenom,nom,nom_affiche,table,type,statut,points,victoires"),
+                                org.hamcrest.Matchers.containsString("Jessika,Dijoux"))));
+    }
+
+    @Test
     void deletingAParticipantInvolvedInAHardExclusionIsRefused() throws Exception {
         Cookie adminCookie = loginAsNewStaff(StaffRole.ADMIN);
         var eventId = weddingEventRepository.findBySlug("seed-wedding").orElseThrow().getId();
