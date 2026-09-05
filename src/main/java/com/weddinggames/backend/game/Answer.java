@@ -1,6 +1,7 @@
 package com.weddinggames.backend.game;
 
 import com.weddinggames.backend.common.BaseEntity;
+import com.weddinggames.backend.participant.Participant;
 import com.weddinggames.backend.team.Team;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -10,7 +11,11 @@ import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 import java.time.Instant;
 
-/** A team's answer to a question. At most one answer per team per question. */
+/**
+ * A team's answer to a question. At most one answer per team per question. Editable live by
+ * whichever team member currently holds the pen ({@link #controllingParticipant}) right up until
+ * the question closes - see the {@code quiz} package.
+ */
 @Entity
 @Table(name = "answer")
 public class Answer extends BaseEntity {
@@ -28,6 +33,10 @@ public class Answer extends BaseEntity {
 
     @Column(name = "submitted_at")
     private Instant submittedAt;
+
+    @ManyToOne(fetch = FetchType.EAGER)
+    @JoinColumn(name = "controlling_participant_id")
+    private Participant controllingParticipant;
 
     protected Answer() {}
 
@@ -60,5 +69,13 @@ public class Answer extends BaseEntity {
 
     public void setSubmittedAt(Instant submittedAt) {
         this.submittedAt = submittedAt;
+    }
+
+    public Participant getControllingParticipant() {
+        return controllingParticipant;
+    }
+
+    public void setControllingParticipant(Participant controllingParticipant) {
+        this.controllingParticipant = controllingParticipant;
     }
 }

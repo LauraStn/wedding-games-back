@@ -1,6 +1,7 @@
 package com.weddinggames.backend.game;
 
 import com.weddinggames.backend.common.BaseEntity;
+import com.weddinggames.backend.common.exception.BusinessRuleViolationException;
 import com.weddinggames.backend.participant.Participant;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -75,8 +76,22 @@ public class Question extends BaseEntity {
         return status;
     }
 
-    public void setStatus(QuestionStatus status) {
-        this.status = status;
+    public void activate() {
+        if (status != QuestionStatus.PENDING) {
+            throw new BusinessRuleViolationException(
+                    "INVALID_QUESTION_STATUS_TRANSITION",
+                    "Seule une question en attente (PENDING) peut etre activee, statut actuel: " + status + ".");
+        }
+        status = QuestionStatus.ACTIVE;
+    }
+
+    public void close() {
+        if (status != QuestionStatus.ACTIVE) {
+            throw new BusinessRuleViolationException(
+                    "INVALID_QUESTION_STATUS_TRANSITION",
+                    "Seule une question active peut etre fermee, statut actuel: " + status + ".");
+        }
+        status = QuestionStatus.CLOSED;
     }
 
     public QuestionSource getSource() {
