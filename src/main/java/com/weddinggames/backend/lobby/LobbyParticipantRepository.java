@@ -10,4 +10,6 @@ public interface LobbyParticipantRepository extends JpaRepository<LobbyParticipa
     List<LobbyParticipant> findByLobbyId(UUID lobbyId);
 
     Optional<LobbyParticipant> findByLobbyIdAndParticipantId(UUID lobbyId, UUID participantId);
+
+    long countByLobbyIdAndConnectionStatus(UUID lobbyId, LobbyConnectionStatus connectionStatus);
 }

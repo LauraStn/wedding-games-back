@@ -1,11 +1,13 @@
 package com.weddinggames.backend.lobby;
 
 import com.weddinggames.backend.lobby.dto.LobbyParticipantResponse;
+import com.weddinggames.backend.lobby.dto.LobbyParticipantStatusResponse;
 import com.weddinggames.backend.security.AuthenticatedActor;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -26,5 +28,11 @@ public class LobbyParticipantController {
     @Operation(summary = "Signale la presence du participant courant dans le salon (a appeler periodiquement)")
     public LobbyParticipantResponse heartbeat(@AuthenticationPrincipal AuthenticatedActor actor) {
         return LobbyParticipantResponse.from(lobbyService.heartbeat(actor.participantId()));
+    }
+
+    @GetMapping
+    @Operation(summary = "Etat du salon adapte au participant (statut, nombre de presents, consignes)")
+    public LobbyParticipantStatusResponse getStatus(@AuthenticationPrincipal AuthenticatedActor actor) {
+        return lobbyService.getStatusForParticipant(actor.participantId());
     }
 }

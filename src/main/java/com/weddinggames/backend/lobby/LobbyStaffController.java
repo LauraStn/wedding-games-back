@@ -39,6 +39,26 @@ public class LobbyStaffController {
         return LobbyResponse.from(lobbyService.lock(eventId));
     }
 
+    @PostMapping("/start")
+    public LobbyResponse start(@PathVariable UUID eventId) {
+        return LobbyResponse.from(lobbyService.start(eventId));
+    }
+
+    @PostMapping("/pause")
+    public LobbyResponse pause(@PathVariable UUID eventId) {
+        return LobbyResponse.from(lobbyService.pause(eventId));
+    }
+
+    @PostMapping("/resume")
+    public LobbyResponse resume(@PathVariable UUID eventId) {
+        return LobbyResponse.from(lobbyService.resume(eventId));
+    }
+
+    @PostMapping("/finish")
+    public LobbyResponse finish(@PathVariable UUID eventId) {
+        return LobbyResponse.from(lobbyService.finish(eventId));
+    }
+
     @GetMapping("/participants")
     public List<LobbyParticipantResponse> participants(@PathVariable UUID eventId) {
         return lobbyService.listParticipants(eventId).stream()

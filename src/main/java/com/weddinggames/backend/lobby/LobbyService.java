@@ -3,6 +3,7 @@ package com.weddinggames.backend.lobby;
 import com.weddinggames.backend.common.exception.NotFoundException;
 import com.weddinggames.backend.event.WeddingEvent;
 import com.weddinggames.backend.event.WeddingEventRepository;
+import com.weddinggames.backend.lobby.dto.LobbyParticipantStatusResponse;
 import com.weddinggames.backend.participant.Participant;
 import com.weddinggames.backend.participant.ParticipantRepository;
 import java.time.Clock;
@@ -65,12 +66,52 @@ public class LobbyService {
         return lobby;
     }
 
+    @Transactional
+    public Lobby start(UUID eventId) {
+        Lobby lobby = getOrCreate(eventId);
+        lobby.start();
+        return lobby;
+    }
+
+    @Transactional
+    public Lobby pause(UUID eventId) {
+        Lobby lobby = getOrCreate(eventId);
+        lobby.pause();
+        return lobby;
+    }
+
+    @Transactional
+    public Lobby resume(UUID eventId) {
+        Lobby lobby = getOrCreate(eventId);
+        lobby.resume();
+        return lobby;
+    }
+
+    @Transactional
+    public Lobby finish(UUID eventId) {
+        Lobby lobby = getOrCreate(eventId);
+        lobby.finish();
+        return lobby;
+    }
+
     @Transactional(readOnly = true)
     public List<LobbyParticipant> listParticipants(UUID eventId) {
         Lobby lobby = lobbyRepository
                 .findByEventId(eventId)
                 .orElseThrow(() -> new NotFoundException("Aucun salon pour cet evenement."));
         return lobbyParticipantRepository.findByLobbyId(lobby.getId());
+    }
+
+    @Transactional
+    public LobbyParticipantStatusResponse getStatusForParticipant(UUID participantId) {
+        Participant participant = participantRepository
+                .findById(participantId)
+                .orElseThrow(() -> new NotFoundException("Participant introuvable."));
+        Lobby lobby = getOrCreate(participant.getEvent().getId());
+        long presentCount =
+                lobbyParticipantRepository.countByLobbyIdAndConnectionStatus(lobby.getId(), LobbyConnectionStatus.CONNECTED);
+        return new LobbyParticipantStatusResponse(
+                lobby.getStatus(), presentCount, participant.getEvent().getWelcomeMessage());
     }
 
     @Transactional

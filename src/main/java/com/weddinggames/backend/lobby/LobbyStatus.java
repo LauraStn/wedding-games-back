@@ -3,5 +3,8 @@ package com.weddinggames.backend.lobby;
 public enum LobbyStatus {
     CLOSED,
     OPEN,
-    LOCKED
+    LOCKED,
+    ACTIVE,
+    PAUSED,
+    FINISHED
 }
