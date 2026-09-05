@@ -11,6 +11,8 @@ public interface ParticipantRepository extends JpaRepository<Participant, UUID> 
 
     List<Participant> findByEventId(UUID eventId);
 
+    List<Participant> findByEventIdAndIdIn(UUID eventId, List<UUID> ids);
+
     Optional<Participant> findByEventIdAndFirstNameAndLastName(UUID eventId, String firstName, String lastName);
 
     @Query("SELECT p FROM Participant p WHERE p.event.id = :eventId "

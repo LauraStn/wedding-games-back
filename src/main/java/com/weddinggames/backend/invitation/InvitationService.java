@@ -2,6 +2,7 @@ package com.weddinggames.backend.invitation;
 
 import com.weddinggames.backend.common.OpaqueTokenGenerator;
 import com.weddinggames.backend.common.exception.InvalidInvitationException;
+import com.weddinggames.backend.common.exception.InvalidRequestException;
 import com.weddinggames.backend.common.exception.NotFoundException;
 import com.weddinggames.backend.invitation.dto.InvitationAdminResponse;
 import com.weddinggames.backend.participant.Participant;
@@ -9,6 +10,7 @@ import com.weddinggames.backend.participant.ParticipantRepository;
 import com.weddinggames.backend.participant.ParticipantStatus;
 import java.time.Clock;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 import org.springframework.stereotype.Service;
@@ -38,10 +40,32 @@ public class InvitationService {
         Participant participant = participantRepository
                 .findById(participantId)
                 .orElseThrow(() -> new NotFoundException("Participant introuvable."));
+        return generateFor(participant, Instant.now(clock));
+    }
 
-        List<Invitation> currentlyActive =
-                invitationRepository.findByParticipantIdAndStatus(participantId, InvitationStatus.ACTIVE);
+    @Transactional
+    public List<InvitationPrintCard> generateBatch(UUID eventId, List<UUID> participantIds) {
+        List<Participant> participants = (participantIds == null || participantIds.isEmpty())
+                ? participantRepository.findByEventId(eventId)
+                : participantRepository.findByEventIdAndIdIn(eventId, participantIds);
+        if (participants.isEmpty()) {
+            throw new InvalidRequestException(
+                    "INVITATION_BATCH_EMPTY", "Aucun participant trouve pour cette generation en lot.");
+        }
+
         Instant now = Instant.now(clock);
+        List<InvitationPrintCard> cards = new ArrayList<>();
+        for (Participant participant : participants) {
+            InvitationAdminResponse invitation = generateFor(participant, now);
+            cards.add(new InvitationPrintCard(
+                    participant.getDisplayName(), participant.getTableLabel(), invitation.invitationUrl()));
+        }
+        return cards;
+    }
+
+    private InvitationAdminResponse generateFor(Participant participant, Instant now) {
+        List<Invitation> currentlyActive = invitationRepository.findByParticipantIdAndStatus(
+                participant.getId(), InvitationStatus.ACTIVE);
         currentlyActive.forEach(invitation -> invitation.revoke(now));
 
         String rawToken = OpaqueTokenGenerator.generateRawToken();
