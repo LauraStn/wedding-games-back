@@ -70,11 +70,32 @@ public class InvitationService {
 
         String rawToken = OpaqueTokenGenerator.generateRawToken();
         Invitation invitation = new Invitation(participant, OpaqueTokenGenerator.hash(rawToken));
+        invitation.setFallbackCode(generateUniqueFallbackCode());
         invitationRepository.save(invitation);
 
         String invitationUrl = invitationProperties.getBaseUrl() + "/" + rawToken;
         return new InvitationAdminResponse(
-                invitation.getId(), participant.getId(), rawToken, invitationUrl, invitation.getCreatedAt());
+                invitation.getId(),
+                participant.getId(),
+                rawToken,
+                invitationUrl,
+                invitation.getFallbackCode(),
+                invitation.getCreatedAt());
+    }
+
+    @Transactional
+    public String renewFallbackCode(UUID participantId) {
+        Invitation invitation = getCurrentInvitation(participantId);
+        invitation.setFallbackCode(generateUniqueFallbackCode());
+        return invitation.getFallbackCode();
+    }
+
+    private String generateUniqueFallbackCode() {
+        String code;
+        do {
+            code = FallbackCodeGenerator.generate();
+        } while (invitationRepository.existsByFallbackCode(code));
+        return code;
     }
 
     @Transactional(readOnly = true)
@@ -87,6 +108,29 @@ public class InvitationService {
         Participant participant = resolveActiveInvitation(rawToken).getParticipant();
         participant.setStatus(ParticipantStatus.CONNECTED);
         return participant;
+    }
+
+    @Transactional(readOnly = true)
+    public Participant resolveByFallbackCode(String code) {
+        return resolveActiveInvitationByFallbackCode(code).getParticipant();
+    }
+
+    @Transactional
+    public Participant confirmByFallbackCode(String code) {
+        Participant participant = resolveActiveInvitationByFallbackCode(code).getParticipant();
+        participant.setStatus(ParticipantStatus.CONNECTED);
+        return participant;
+    }
+
+    @Transactional
+    public void revoke(UUID participantId) {
+        List<Invitation> currentlyActive =
+                invitationRepository.findByParticipantIdAndStatus(participantId, InvitationStatus.ACTIVE);
+        if (currentlyActive.isEmpty()) {
+            throw new NotFoundException("Aucune invitation active pour ce participant.");
+        }
+        Instant now = Instant.now(clock);
+        currentlyActive.forEach(invitation -> invitation.revoke(now));
     }
 
     @Transactional(readOnly = true)
@@ -105,6 +149,16 @@ public class InvitationService {
                 .orElseThrow(() -> new InvalidInvitationException("Invitation invalide ou revoquee."));
         if (invitation.getStatus() != InvitationStatus.ACTIVE) {
             throw new InvalidInvitationException("Invitation invalide ou revoquee.");
+        }
+        return invitation;
+    }
+
+    private Invitation resolveActiveInvitationByFallbackCode(String code) {
+        Invitation invitation = invitationRepository
+                .findByFallbackCode(code)
+                .orElseThrow(() -> new InvalidInvitationException("Code de secours invalide ou revoque."));
+        if (invitation.getStatus() != InvitationStatus.ACTIVE) {
+            throw new InvalidInvitationException("Code de secours invalide ou revoque.");
         }
         return invitation;
     }

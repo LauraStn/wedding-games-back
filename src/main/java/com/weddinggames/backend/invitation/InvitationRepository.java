@@ -9,5 +9,9 @@ public interface InvitationRepository extends JpaRepository<Invitation, UUID> {
 
     Optional<Invitation> findByTokenHash(String tokenHash);
 
+    Optional<Invitation> findByFallbackCode(String fallbackCode);
+
+    boolean existsByFallbackCode(String fallbackCode);
+
     List<Invitation> findByParticipantIdAndStatus(UUID participantId, InvitationStatus status);
 }

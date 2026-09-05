@@ -8,4 +8,9 @@ import java.util.UUID;
  * raw token is ever visible. It is never stored and cannot be retrieved again.
  */
 public record InvitationAdminResponse(
-        UUID invitationId, UUID participantId, String rawToken, String invitationUrl, Instant createdAt) {}
+        UUID invitationId,
+        UUID participantId,
+        String rawToken,
+        String invitationUrl,
+        String fallbackCode,
+        Instant createdAt) {}

@@ -28,6 +28,10 @@ public class Invitation extends BaseEntity {
     @Column(name = "token_hash", nullable = false, unique = true, length = 128)
     private String tokenHash;
 
+    /** Plain text on purpose: unlike the token, an administrator must be able to read it back to a guest. */
+    @Column(name = "fallback_code", unique = true, length = 10)
+    private String fallbackCode;
+
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 20)
     private InvitationStatus status = InvitationStatus.ACTIVE;
@@ -53,6 +57,14 @@ public class Invitation extends BaseEntity {
 
     public String getTokenHash() {
         return tokenHash;
+    }
+
+    public String getFallbackCode() {
+        return fallbackCode;
+    }
+
+    public void setFallbackCode(String fallbackCode) {
+        this.fallbackCode = fallbackCode;
     }
 
     public InvitationStatus getStatus() {

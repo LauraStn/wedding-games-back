@@ -56,6 +56,8 @@ public class SecurityConfig {
                                 "/api/v1/events/*/public",
                                 "/api/v1/invitations/*/resolve",
                                 "/api/v1/invitations/*/confirm",
+                                "/api/v1/invitations/fallback/*/resolve",
+                                "/api/v1/invitations/fallback/*/confirm",
                                 "/api/v1/auth/staff/login",
                                 "/v3/api-docs/**",
                                 "/swagger-ui/**",

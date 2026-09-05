@@ -5,9 +5,11 @@ import com.weddinggames.backend.invitation.InvitationStatus;
 import java.time.Instant;
 import java.util.UUID;
 
-public record InvitationStatusResponse(UUID invitationId, InvitationStatus status, Instant createdAt) {
+public record InvitationStatusResponse(
+        UUID invitationId, InvitationStatus status, String fallbackCode, Instant createdAt) {
 
     public static InvitationStatusResponse from(Invitation invitation) {
-        return new InvitationStatusResponse(invitation.getId(), invitation.getStatus(), invitation.getCreatedAt());
+        return new InvitationStatusResponse(
+                invitation.getId(), invitation.getStatus(), invitation.getFallbackCode(), invitation.getCreatedAt());
     }
 }
