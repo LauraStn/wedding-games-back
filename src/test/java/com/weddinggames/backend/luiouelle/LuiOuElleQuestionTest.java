@@ -79,8 +79,20 @@ class LuiOuElleQuestionTest {
         question.markPlayed();
 
         assertThatThrownBy(() -> question.correct("Nouveau texte")).isInstanceOf(BusinessRuleViolationException.class);
-        assertThatThrownBy(() -> question.reviseByAuthor("Nouveau texte"))
+        assertThatThrownBy(() -> question.reviseByAuthor("Nouveau texte", false))
                 .isInstanceOf(BusinessRuleViolationException.class);
+    }
+
+    @Test
+    void defaultsToNoRevealConsent() {
+        assertThat(newQuestion().isRevealAuthorConsent()).isFalse();
+    }
+
+    @Test
+    void reviseByAuthorCanChangeTheRevealConsent() {
+        LuiOuElleQuestion question = newQuestion();
+        question.reviseByAuthor("Nouveau texte", true);
+        assertThat(question.isRevealAuthorConsent()).isTrue();
     }
 
     @Test

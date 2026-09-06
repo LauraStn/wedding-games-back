@@ -58,7 +58,7 @@ class LuiOuElleQuestionServiceTest {
     void proposesAQuestionWhenTheLobbyIsOpenAndUnderTheLimit() {
         when(questionRepository.countByAuthorId(participantId)).thenReturn(0L);
 
-        LuiOuElleQuestion question = service.propose(participantId, "Qui est le plus bordelique ?");
+        LuiOuElleQuestion question = service.propose(participantId, "Qui est le plus bordelique ?", false);
 
         assertThat(question.getContent()).isEqualTo("Qui est le plus bordelique ?");
         assertThat(question.getAuthor()).isEqualTo(author);
@@ -68,9 +68,30 @@ class LuiOuElleQuestionServiceTest {
     void trimsTheProposedContent() {
         when(questionRepository.countByAuthorId(participantId)).thenReturn(0L);
 
-        LuiOuElleQuestion question = service.propose(participantId, "  Qui cuisine le mieux ?  ");
+        LuiOuElleQuestion question = service.propose(participantId, "  Qui cuisine le mieux ?  ", false);
 
         assertThat(question.getContent()).isEqualTo("Qui cuisine le mieux ?");
+    }
+
+    @Test
+    void carriesTheAuthorsRevealConsentThroughToThePersistedQuestion() {
+        when(questionRepository.countByAuthorId(participantId)).thenReturn(0L);
+
+        LuiOuElleQuestion question = service.propose(participantId, "Qui est le plus radin ?", true);
+
+        assertThat(question.isRevealAuthorConsent()).isTrue();
+    }
+
+    @Test
+    void updatingCanChangeTheRevealConsent() {
+        UUID questionId = UUID.randomUUID();
+        WeddingEvent event = author.getEvent();
+        LuiOuElleQuestion existing = new LuiOuElleQuestion(event, author, "Ancienne question", false);
+        when(questionRepository.findByIdAndAuthorId(questionId, participantId)).thenReturn(Optional.of(existing));
+
+        LuiOuElleQuestion updated = service.update(participantId, questionId, "Nouvelle question", true);
+
+        assertThat(updated.isRevealAuthorConsent()).isTrue();
     }
 
     @Test
@@ -78,7 +99,7 @@ class LuiOuElleQuestionServiceTest {
         properties.setMaxQuestionsPerParticipant(2);
         when(questionRepository.countByAuthorId(participantId)).thenReturn(2L);
 
-        assertThatThrownBy(() -> service.propose(participantId, "Une troisieme question ?"))
+        assertThatThrownBy(() -> service.propose(participantId, "Une troisieme question ?", false))
                 .isInstanceOf(BusinessRuleViolationException.class);
     }
 
@@ -89,7 +110,7 @@ class LuiOuElleQuestionServiceTest {
         Lobby closedLobby = new Lobby(event);
         when(lobbyRepository.findByEventId(eventId)).thenReturn(Optional.of(closedLobby));
 
-        assertThatThrownBy(() -> service.propose(participantId, "Une question ?"))
+        assertThatThrownBy(() -> service.propose(participantId, "Une question ?", false))
                 .isInstanceOf(BusinessRuleViolationException.class);
     }
 
@@ -97,7 +118,7 @@ class LuiOuElleQuestionServiceTest {
     void rejectsProposingWhenNoLobbyExistsYet() {
         when(lobbyRepository.findByEventId(eventId)).thenReturn(Optional.empty());
 
-        assertThatThrownBy(() -> service.propose(participantId, "Une question ?"))
+        assertThatThrownBy(() -> service.propose(participantId, "Une question ?", false))
                 .isInstanceOf(BusinessRuleViolationException.class);
     }
 
@@ -106,7 +127,7 @@ class LuiOuElleQuestionServiceTest {
         properties.setMaxContentLength(10);
         when(questionRepository.countByAuthorId(participantId)).thenReturn(0L);
 
-        assertThatThrownBy(() -> service.propose(participantId, "Cette question est beaucoup trop longue"))
+        assertThatThrownBy(() -> service.propose(participantId, "Cette question est beaucoup trop longue", false))
                 .isInstanceOf(InvalidRequestException.class);
     }
 
@@ -115,7 +136,7 @@ class LuiOuElleQuestionServiceTest {
         UUID unknownId = UUID.randomUUID();
         when(participantRepository.findById(unknownId)).thenReturn(Optional.empty());
 
-        assertThatThrownBy(() -> service.propose(unknownId, "Une question ?")).isInstanceOf(NotFoundException.class);
+        assertThatThrownBy(() -> service.propose(unknownId, "Une question ?", false)).isInstanceOf(NotFoundException.class);
     }
 
     @Test
@@ -125,7 +146,7 @@ class LuiOuElleQuestionServiceTest {
         LuiOuElleQuestion existing = new LuiOuElleQuestion(event, author, "Ancienne question");
         when(questionRepository.findByIdAndAuthorId(questionId, participantId)).thenReturn(Optional.of(existing));
 
-        LuiOuElleQuestion updated = service.update(participantId, questionId, "Nouvelle question");
+        LuiOuElleQuestion updated = service.update(participantId, questionId, "Nouvelle question", false);
 
         assertThat(updated.getContent()).isEqualTo("Nouvelle question");
     }
@@ -135,7 +156,7 @@ class LuiOuElleQuestionServiceTest {
         UUID questionId = UUID.randomUUID();
         when(questionRepository.findByIdAndAuthorId(questionId, participantId)).thenReturn(Optional.empty());
 
-        assertThatThrownBy(() -> service.update(participantId, questionId, "Nouvelle question"))
+        assertThatThrownBy(() -> service.update(participantId, questionId, "Nouvelle question", false))
                 .isInstanceOf(NotFoundException.class);
     }
 
@@ -147,7 +168,7 @@ class LuiOuElleQuestionServiceTest {
         existing.accept();
         when(questionRepository.findByIdAndAuthorId(questionId, participantId)).thenReturn(Optional.of(existing));
 
-        LuiOuElleQuestion updated = service.update(participantId, questionId, "Nouvelle question");
+        LuiOuElleQuestion updated = service.update(participantId, questionId, "Nouvelle question", false);
 
         assertThat(updated.getStatus()).isEqualTo(LuiOuElleQuestionStatus.PENDING);
     }
@@ -163,7 +184,7 @@ class LuiOuElleQuestionServiceTest {
         lockedLobby.lock();
         when(lobbyRepository.findByEventId(eventId)).thenReturn(Optional.of(lockedLobby));
 
-        assertThatThrownBy(() -> service.update(participantId, questionId, "Nouvelle question"))
+        assertThatThrownBy(() -> service.update(participantId, questionId, "Nouvelle question", false))
                 .isInstanceOf(BusinessRuleViolationException.class);
     }
 }

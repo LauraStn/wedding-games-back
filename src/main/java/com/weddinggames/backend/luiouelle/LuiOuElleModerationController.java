@@ -1,6 +1,6 @@
 package com.weddinggames.backend.luiouelle;
 
-import com.weddinggames.backend.luiouelle.dto.LuiOuElleQuestionRequest;
+import com.weddinggames.backend.luiouelle.dto.LuiOuElleCorrectionRequest;
 import com.weddinggames.backend.luiouelle.dto.LuiOuElleQuestionResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -31,26 +31,26 @@ public class LuiOuElleModerationController {
     @Operation(summary = "Liste toutes les questions proposees pour un evenement, pour moderation")
     public List<LuiOuElleQuestionResponse> list(@PathVariable UUID eventId) {
         return moderationService.listForEvent(eventId).stream()
-                .map(LuiOuElleQuestionResponse::from)
+                .map(LuiOuElleQuestionResponse::forStaff)
                 .toList();
     }
 
     @PostMapping("/api/v1/staff/lui-ou-elle/questions/{id}/accept")
     @Operation(summary = "Accepte la question: eligible a la selection aleatoire pour le jeu")
     public LuiOuElleQuestionResponse accept(@PathVariable UUID id) {
-        return LuiOuElleQuestionResponse.from(moderationService.accept(id));
+        return LuiOuElleQuestionResponse.forStaff(moderationService.accept(id));
     }
 
     @PostMapping("/api/v1/staff/lui-ou-elle/questions/{id}/reject")
     @Operation(summary = "Refuse la question: jamais selectionnee pour le jeu")
     public LuiOuElleQuestionResponse reject(@PathVariable UUID id) {
-        return LuiOuElleQuestionResponse.from(moderationService.reject(id));
+        return LuiOuElleQuestionResponse.forStaff(moderationService.reject(id));
     }
 
     @PutMapping("/api/v1/staff/lui-ou-elle/questions/{id}/content")
     @Operation(summary = "Corrige le contenu (faute de frappe, texte illisible) sans changer le sens")
     public LuiOuElleQuestionResponse correct(
-            @PathVariable UUID id, @Valid @RequestBody LuiOuElleQuestionRequest request) {
-        return LuiOuElleQuestionResponse.from(moderationService.correct(id, request.content()));
+            @PathVariable UUID id, @Valid @RequestBody LuiOuElleCorrectionRequest request) {
+        return LuiOuElleQuestionResponse.forStaff(moderationService.correct(id, request.content()));
     }
 }

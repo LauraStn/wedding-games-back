@@ -15,9 +15,9 @@ import org.springframework.transaction.annotation.Transactional;
 
 /**
  * Lets a guest propose (and, while the lobby is still open, edit) up to a configurable number of
- * "Lui ou Elle" questions about the couple. Moderation (see {@link LuiOuElleModerationService}),
- * random selection for play, and the author-reveal consent are handled by their own
- * tickets/services downstream of this one.
+ * "Lui ou Elle" questions about the couple, along with their consent to have their first name
+ * revealed alongside it. Moderation (see {@link LuiOuElleModerationService}) and random selection
+ * for play are handled by their own tickets/services downstream of this one.
  */
 @Service
 public class LuiOuElleQuestionService {
@@ -44,7 +44,7 @@ public class LuiOuElleQuestionService {
     }
 
     @Transactional
-    public LuiOuElleQuestion propose(UUID participantId, String content) {
+    public LuiOuElleQuestion propose(UUID participantId, String content, boolean revealAuthorConsent) {
         Participant author = participantRepository
                 .findById(participantId)
                 .orElseThrow(() -> new NotFoundException("Participant introuvable."));
@@ -59,19 +59,20 @@ public class LuiOuElleQuestionService {
                             + " question(s).");
         }
 
-        LuiOuElleQuestion question = new LuiOuElleQuestion(author.getEvent(), author, content.trim());
+        LuiOuElleQuestion question =
+                new LuiOuElleQuestion(author.getEvent(), author, content.trim(), revealAuthorConsent);
         return questionRepository.save(question);
     }
 
     @Transactional
-    public LuiOuElleQuestion update(UUID participantId, UUID questionId, String content) {
+    public LuiOuElleQuestion update(UUID participantId, UUID questionId, String content, boolean revealAuthorConsent) {
         LuiOuElleQuestion question = questionRepository
                 .findByIdAndAuthorId(questionId, participantId)
                 .orElseThrow(() -> new NotFoundException("Question introuvable."));
         requireLobbyOpen(question.getEvent().getId());
         requireValidContent(content);
 
-        question.reviseByAuthor(content.trim());
+        question.reviseByAuthor(content.trim(), revealAuthorConsent);
         return question;
     }
 

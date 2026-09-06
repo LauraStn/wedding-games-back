@@ -44,7 +44,7 @@ public class LuiOuElleQuestionController {
     @Operation(summary = "Propose une nouvelle question (limite au nombre de questions par participant)")
     public ResponseEntity<LuiOuElleQuestionResponse> propose(
             @AuthenticationPrincipal AuthenticatedActor actor, @Valid @RequestBody LuiOuElleQuestionRequest request) {
-        var question = questionService.propose(actor.participantId(), request.content());
+        var question = questionService.propose(actor.participantId(), request.content(), request.revealAuthorConsent());
         return ResponseEntity.status(HttpStatus.CREATED).body(LuiOuElleQuestionResponse.from(question));
     }
 
@@ -54,6 +54,7 @@ public class LuiOuElleQuestionController {
             @AuthenticationPrincipal AuthenticatedActor actor,
             @PathVariable UUID id,
             @Valid @RequestBody LuiOuElleQuestionRequest request) {
-        return LuiOuElleQuestionResponse.from(questionService.update(actor.participantId(), id, request.content()));
+        return LuiOuElleQuestionResponse.from(
+                questionService.update(actor.participantId(), id, request.content(), request.revealAuthorConsent()));
     }
 }

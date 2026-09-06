@@ -25,7 +25,10 @@ public class LuiOuElleSelectionController {
     @PostMapping("/select-random")
     @Operation(
             summary = "Tire au hasard une question acceptee et la fait passer a jouee",
-            description = "Echoue explicitement (409) si aucune question acceptee n'est disponible.")
+            description = "Echoue explicitement (409) si aucune question acceptee n'est disponible. Le prenom de "
+                    + "l'auteur n'est renvoye que s'il a consenti a etre revele: c'est le moment ou ce "
+                    + "consentement compte le plus, contrairement a la moderation ou le staff voit toujours "
+                    + "qui a propose quoi.")
     public LuiOuElleQuestionResponse selectRandom(@PathVariable UUID eventId) {
         return LuiOuElleQuestionResponse.from(selectionService.selectRandom(eventId));
     }

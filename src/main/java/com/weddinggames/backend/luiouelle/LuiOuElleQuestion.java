@@ -54,12 +54,20 @@ public class LuiOuElleQuestion extends BaseEntity {
     @Column(nullable = false, length = 20)
     private LuiOuElleQuestionStatus status = LuiOuElleQuestionStatus.PENDING;
 
+    @Column(name = "reveal_author_consent", nullable = false)
+    private boolean revealAuthorConsent;
+
     protected LuiOuElleQuestion() {}
 
     public LuiOuElleQuestion(WeddingEvent event, Participant author, String content) {
+        this(event, author, content, false);
+    }
+
+    public LuiOuElleQuestion(WeddingEvent event, Participant author, String content, boolean revealAuthorConsent) {
         this.event = event;
         this.author = author;
         this.content = content;
+        this.revealAuthorConsent = revealAuthorConsent;
     }
 
     public WeddingEvent getEvent() {
@@ -78,10 +86,16 @@ public class LuiOuElleQuestion extends BaseEntity {
         return status;
     }
 
+    /** Whether the author consented to their first name being revealed alongside this question. */
+    public boolean isRevealAuthorConsent() {
+        return revealAuthorConsent;
+    }
+
     /** The guest author edits their own proposal: blocked once played, and re-queued for review. */
-    public void reviseByAuthor(String newContent) {
+    public void reviseByAuthor(String newContent, boolean revealAuthorConsent) {
         requireNotPlayed();
         this.content = newContent;
+        this.revealAuthorConsent = revealAuthorConsent;
         if (status != LuiOuElleQuestionStatus.PENDING) {
             status = LuiOuElleQuestionStatus.PENDING;
         }
