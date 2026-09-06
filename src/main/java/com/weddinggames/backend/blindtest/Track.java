@@ -1,6 +1,7 @@
 package com.weddinggames.backend.blindtest;
 
 import com.weddinggames.backend.common.BaseEntity;
+import com.weddinggames.backend.common.exception.BusinessRuleViolationException;
 import com.weddinggames.backend.game.Game;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -10,8 +11,16 @@ import jakarta.persistence.FetchType;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
+import java.time.Instant;
 
-/** A song configured for a "blind test" game, played in one of a few guessing variants. */
+/**
+ * A song configured for a "blind test" game, played in one of a few guessing variants.
+ *
+ * <p>Round lifecycle: PENDING -&gt; ACTIVE -&gt; CLOSED, same shape as {@code Question}. The
+ * countdown timer is a separate action from activating the round: activating just makes the
+ * track the "current" one so staff/projection can show its title/variant, while starting the
+ * timer is the intervenant's explicit cue that guessing has begun.
+ */
 @Entity
 @Table(name = "track")
 public class Track extends BaseEntity {
@@ -32,6 +41,13 @@ public class Track extends BaseEntity {
 
     @Column(nullable = false)
     private int sequence;
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 20)
+    private TrackStatus status = TrackStatus.PENDING;
+
+    @Column(name = "timer_started_at")
+    private Instant timerStartedAt;
 
     protected Track() {}
 
@@ -77,5 +93,39 @@ public class Track extends BaseEntity {
 
     public void setSequence(int sequence) {
         this.sequence = sequence;
+    }
+
+    public TrackStatus getStatus() {
+        return status;
+    }
+
+    public Instant getTimerStartedAt() {
+        return timerStartedAt;
+    }
+
+    public void activate() {
+        if (status != TrackStatus.PENDING) {
+            throw new BusinessRuleViolationException(
+                    "INVALID_TRACK_STATUS_TRANSITION",
+                    "Seul un morceau en attente (PENDING) peut etre active, statut actuel: " + status + ".");
+        }
+        status = TrackStatus.ACTIVE;
+    }
+
+    public void close() {
+        if (status != TrackStatus.ACTIVE) {
+            throw new BusinessRuleViolationException(
+                    "INVALID_TRACK_STATUS_TRANSITION",
+                    "Seul un morceau actif peut etre ferme, statut actuel: " + status + ".");
+        }
+        status = TrackStatus.CLOSED;
+    }
+
+    public void startTimer(Instant now) {
+        if (status != TrackStatus.ACTIVE) {
+            throw new BusinessRuleViolationException(
+                    "TRACK_NOT_ACTIVE", "Le chronometre ne peut etre lance que sur un morceau actif.");
+        }
+        timerStartedAt = now;
     }
 }

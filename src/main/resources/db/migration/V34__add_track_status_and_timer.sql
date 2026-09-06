@@ -1,0 +1,6 @@
+ALTER TABLE track
+    ADD COLUMN status VARCHAR(20) NOT NULL DEFAULT 'PENDING',
+    ADD COLUMN timer_started_at TIMESTAMPTZ;
+
+ALTER TABLE track
+    ADD CONSTRAINT ck_track_status CHECK (status IN ('PENDING', 'ACTIVE', 'CLOSED'));

@@ -192,6 +192,24 @@ class ScoreIT extends AbstractIntegrationTest {
     }
 
     @Test
+    void projectionRoleCanViewThePodiumButCannotAwardPoints() throws Exception {
+        Cookie adminCookie = loginAsNewStaff(StaffRole.ADMIN);
+        WeddingEvent event = createEvent();
+        Cookie projectionCookie = loginAsNewStaff(StaffRole.PROJECTION);
+
+        mockMvc.perform(get("/api/v1/staff/events/{eventId}/podium", event.getId()).cookie(projectionCookie))
+                .andExpect(status().isOk());
+
+        mockMvc.perform(post("/api/v1/staff/events/{eventId}/scores", event.getId())
+                        .cookie(projectionCookie)
+                        .contentType("application/json")
+                        .content("""
+                                {"gameId":null,"teamId":"%s","points":10,"reason":null}
+                                """.formatted(UUID.randomUUID())))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
     void participantCannotViewThePodium() throws Exception {
         Cookie adminCookie = loginAsNewStaff(StaffRole.ADMIN);
         WeddingEvent event = createEvent();

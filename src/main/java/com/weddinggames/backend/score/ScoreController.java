@@ -45,7 +45,7 @@ public class ScoreController {
     }
 
     @GetMapping("/podium")
-    @PreAuthorize("hasAnyRole('INTERVENANT','JURY','ADMIN')")
+    @PreAuthorize("hasAnyRole('INTERVENANT','JURY','PROJECTION','ADMIN')")
     @Operation(summary = "Classement des equipes par total de points (egalites partagees, jamais de tirage au sort)")
     public List<PodiumEntryResponse> podium(@PathVariable UUID eventId) {
         return scoreService.podium(eventId);
