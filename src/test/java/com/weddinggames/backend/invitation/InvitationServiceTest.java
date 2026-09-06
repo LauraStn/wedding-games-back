@@ -10,6 +10,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.weddinggames.backend.common.audit.AuditLogService;
 import com.weddinggames.backend.common.exception.InvalidInvitationException;
 import com.weddinggames.backend.common.exception.InvalidRequestException;
 import com.weddinggames.backend.common.exception.NotFoundException;
@@ -30,6 +31,7 @@ class InvitationServiceTest {
 
     private InvitationRepository invitationRepository;
     private ParticipantRepository participantRepository;
+    private AuditLogService auditLogService;
     private InvitationService service;
     private UUID eventId;
 
@@ -40,7 +42,8 @@ class InvitationServiceTest {
         InvitationProperties properties = new InvitationProperties();
         properties.setBaseUrl("https://example.test/invite");
         Clock clock = Clock.fixed(Instant.parse("2026-01-01T00:00:00Z"), ZoneOffset.UTC);
-        service = new InvitationService(invitationRepository, participantRepository, properties, clock);
+        auditLogService = mock(AuditLogService.class);
+        service = new InvitationService(invitationRepository, participantRepository, properties, clock, auditLogService);
         eventId = UUID.randomUUID();
 
         when(invitationRepository.findByParticipantIdAndStatus(any(), eq(InvitationStatus.ACTIVE)))
@@ -54,7 +57,7 @@ class InvitationServiceTest {
         Participant bob = new Participant(event, "Bob", "Builder", "Bob Builder", null, ParticipantType.GUEST);
         when(participantRepository.findByEventId(eventId)).thenReturn(List.of(alice, bob));
 
-        List<InvitationPrintCard> cards = service.generateBatch(eventId, null);
+        List<InvitationPrintCard> cards = service.generateBatch(eventId, null, UUID.randomUUID());
 
         assertThat(cards).hasSize(2);
         assertThat(cards.get(0).displayName()).isEqualTo("Alice Wonderland");
@@ -65,13 +68,32 @@ class InvitationServiceTest {
     }
 
     @Test
+    void batchGenerationIsAuditLoggedOnceForTheWholeBatch() {
+        WeddingEvent event = mock(WeddingEvent.class);
+        Participant alice = new Participant(event, "Alice", "Wonderland", "Alice Wonderland", null, ParticipantType.GUEST);
+        Participant bob = new Participant(event, "Bob", "Builder", "Bob Builder", null, ParticipantType.GUEST);
+        when(participantRepository.findByEventId(eventId)).thenReturn(List.of(alice, bob));
+        UUID staffAccountId = UUID.randomUUID();
+
+        service.generateBatch(eventId, null, staffAccountId);
+
+        verify(auditLogService)
+                .record(
+                        eq(staffAccountId),
+                        eq(com.weddinggames.backend.common.audit.AuditAction.INVITATION_BATCH_REGENERATED),
+                        eq(eventId),
+                        org.mockito.ArgumentMatchers.isNull(),
+                        anyString());
+    }
+
+    @Test
     void restrictsGenerationToTheGivenParticipantIds() {
         UUID aliceId = UUID.randomUUID();
         WeddingEvent event = mock(WeddingEvent.class);
         Participant alice = new Participant(event, "Alice", "Wonderland", "Alice Wonderland", null, ParticipantType.GUEST);
         when(participantRepository.findByEventIdAndIdIn(eventId, List.of(aliceId))).thenReturn(List.of(alice));
 
-        List<InvitationPrintCard> cards = service.generateBatch(eventId, List.of(aliceId));
+        List<InvitationPrintCard> cards = service.generateBatch(eventId, List.of(aliceId), UUID.randomUUID());
 
         assertThat(cards).hasSize(1);
         verify(participantRepository).findByEventIdAndIdIn(eventId, List.of(aliceId));
@@ -81,7 +103,7 @@ class InvitationServiceTest {
     void rejectsBatchGenerationWhenNoParticipantMatches() {
         when(participantRepository.findByEventId(eventId)).thenReturn(List.of());
 
-        assertThatThrownBy(() -> service.generateBatch(eventId, null)).isInstanceOf(InvalidRequestException.class);
+        assertThatThrownBy(() -> service.generateBatch(eventId, null, UUID.randomUUID())).isInstanceOf(InvalidRequestException.class);
     }
 
     @Test
@@ -93,7 +115,7 @@ class InvitationServiceTest {
         when(invitationRepository.findByParticipantIdAndStatus(alice.getId(), InvitationStatus.ACTIVE))
                 .thenReturn(List.of(activeInvitation));
 
-        service.generateBatch(eventId, null);
+        service.generateBatch(eventId, null, UUID.randomUUID());
 
         assertThat(activeInvitation.getStatus()).isEqualTo(InvitationStatus.REVOKED);
     }
@@ -129,7 +151,7 @@ class InvitationServiceTest {
         Participant alice = new Participant(event, "Alice", "Wonderland", "Alice Wonderland", null, ParticipantType.GUEST);
         when(participantRepository.findByEventId(eventId)).thenReturn(List.of(alice));
 
-        List<InvitationPrintCard> cards = service.generateBatch(eventId, null);
+        List<InvitationPrintCard> cards = service.generateBatch(eventId, null, UUID.randomUUID());
 
         assertThat(cards).hasSize(1);
         org.mockito.ArgumentCaptor<Invitation> captor = org.mockito.ArgumentCaptor.forClass(Invitation.class);
@@ -144,7 +166,7 @@ class InvitationServiceTest {
         when(participantRepository.findByEventId(eventId)).thenReturn(List.of(alice));
         when(invitationRepository.existsByFallbackCode(anyString())).thenReturn(true, true, false);
 
-        service.generateBatch(eventId, null);
+        service.generateBatch(eventId, null, UUID.randomUUID());
 
         verify(invitationRepository, times(3)).existsByFallbackCode(anyString());
     }

@@ -1,5 +1,7 @@
 package com.weddinggames.backend.exclusion;
 
+import com.weddinggames.backend.common.audit.AuditAction;
+import com.weddinggames.backend.common.audit.AuditLogService;
 import com.weddinggames.backend.common.exception.BusinessRuleViolationException;
 import com.weddinggames.backend.common.exception.ConflictException;
 import com.weddinggames.backend.common.exception.InvalidRequestException;
@@ -20,14 +22,17 @@ public class PairingExclusionService {
     private final PairingExclusionRepository pairingExclusionRepository;
     private final ParticipantRepository participantRepository;
     private final WeddingEventRepository weddingEventRepository;
+    private final AuditLogService auditLogService;
 
     public PairingExclusionService(
             PairingExclusionRepository pairingExclusionRepository,
             ParticipantRepository participantRepository,
-            WeddingEventRepository weddingEventRepository) {
+            WeddingEventRepository weddingEventRepository,
+            AuditLogService auditLogService) {
         this.pairingExclusionRepository = pairingExclusionRepository;
         this.participantRepository = participantRepository;
         this.weddingEventRepository = weddingEventRepository;
+        this.auditLogService = auditLogService;
     }
 
     @Transactional(readOnly = true)
@@ -43,7 +48,7 @@ public class PairingExclusionService {
     }
 
     @Transactional
-    public PairingExclusion create(UUID eventId, PairingExclusionCreateRequest request) {
+    public PairingExclusion create(UUID eventId, PairingExclusionCreateRequest request, UUID staffAccountId) {
         if (request.participantAId().equals(request.participantBId())) {
             throw new InvalidRequestException(
                     "SAME_PARTICIPANT", "Un participant ne peut pas etre exclu de lui-meme.");
@@ -67,13 +72,30 @@ public class PairingExclusionService {
         }
 
         PairingExclusion exclusion = new PairingExclusion(event, low, high, request.reason(), request.exclusionType());
-        return pairingExclusionRepository.save(exclusion);
+        PairingExclusion saved = pairingExclusionRepository.save(exclusion);
+        if (saved.getExclusionType() == ExclusionType.HARD) {
+            auditLogService.record(
+                    staffAccountId,
+                    AuditAction.HARD_EXCLUSION_CREATED,
+                    eventId,
+                    saved.getId(),
+                    low.getDisplayName() + " / " + high.getDisplayName());
+        }
+        return saved;
     }
 
     @Transactional
-    public PairingExclusion updateReason(UUID id, String reason) {
+    public PairingExclusion updateReason(UUID id, String reason, UUID staffAccountId) {
         PairingExclusion exclusion = get(id);
         exclusion.setReason(reason);
+        if (exclusion.getExclusionType() == ExclusionType.HARD) {
+            auditLogService.record(
+                    staffAccountId,
+                    AuditAction.HARD_EXCLUSION_REASON_UPDATED,
+                    exclusion.getEvent().getId(),
+                    exclusion.getId(),
+                    reason);
+        }
         return exclusion;
     }
 

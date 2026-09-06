@@ -4,6 +4,7 @@ import com.weddinggames.backend.exclusion.dto.PairingCheckResponse;
 import com.weddinggames.backend.exclusion.dto.PairingExclusionCreateRequest;
 import com.weddinggames.backend.exclusion.dto.PairingExclusionReasonUpdateRequest;
 import com.weddinggames.backend.exclusion.dto.PairingExclusionResponse;
+import com.weddinggames.backend.security.AuthenticatedActor;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import java.util.List;
@@ -11,6 +12,7 @@ import java.util.UUID;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
@@ -44,8 +46,10 @@ public class PairingExclusionController {
 
     @PostMapping("/api/v1/admin/events/{eventId}/exclusions")
     public ResponseEntity<PairingExclusionResponse> create(
-            @PathVariable UUID eventId, @Valid @RequestBody PairingExclusionCreateRequest request) {
-        PairingExclusion created = pairingExclusionService.create(eventId, request);
+            @PathVariable UUID eventId,
+            @Valid @RequestBody PairingExclusionCreateRequest request,
+            @AuthenticationPrincipal AuthenticatedActor actor) {
+        PairingExclusion created = pairingExclusionService.create(eventId, request, actor.staffAccountId());
         return ResponseEntity.status(HttpStatus.CREATED).body(PairingExclusionResponse.from(created));
     }
 
@@ -56,8 +60,11 @@ public class PairingExclusionController {
 
     @PatchMapping("/api/v1/admin/exclusions/{id}")
     public PairingExclusionResponse updateReason(
-            @PathVariable UUID id, @Valid @RequestBody PairingExclusionReasonUpdateRequest request) {
-        return PairingExclusionResponse.from(pairingExclusionService.updateReason(id, request.reason()));
+            @PathVariable UUID id,
+            @Valid @RequestBody PairingExclusionReasonUpdateRequest request,
+            @AuthenticationPrincipal AuthenticatedActor actor) {
+        return PairingExclusionResponse.from(
+                pairingExclusionService.updateReason(id, request.reason(), actor.staffAccountId()));
     }
 
     @DeleteMapping("/api/v1/admin/exclusions/{id}")

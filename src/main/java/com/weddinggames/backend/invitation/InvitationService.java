@@ -1,6 +1,8 @@
 package com.weddinggames.backend.invitation;
 
 import com.weddinggames.backend.common.OpaqueTokenGenerator;
+import com.weddinggames.backend.common.audit.AuditAction;
+import com.weddinggames.backend.common.audit.AuditLogService;
 import com.weddinggames.backend.common.exception.InvalidInvitationException;
 import com.weddinggames.backend.common.exception.InvalidRequestException;
 import com.weddinggames.backend.common.exception.NotFoundException;
@@ -23,16 +25,19 @@ public class InvitationService {
     private final ParticipantRepository participantRepository;
     private final InvitationProperties invitationProperties;
     private final Clock clock;
+    private final AuditLogService auditLogService;
 
     public InvitationService(
             InvitationRepository invitationRepository,
             ParticipantRepository participantRepository,
             InvitationProperties invitationProperties,
-            Clock clock) {
+            Clock clock,
+            AuditLogService auditLogService) {
         this.invitationRepository = invitationRepository;
         this.participantRepository = participantRepository;
         this.invitationProperties = invitationProperties;
         this.clock = clock;
+        this.auditLogService = auditLogService;
     }
 
     @Transactional
@@ -44,7 +49,7 @@ public class InvitationService {
     }
 
     @Transactional
-    public List<InvitationPrintCard> generateBatch(UUID eventId, List<UUID> participantIds) {
+    public List<InvitationPrintCard> generateBatch(UUID eventId, List<UUID> participantIds, UUID staffAccountId) {
         List<Participant> participants = (participantIds == null || participantIds.isEmpty())
                 ? participantRepository.findByEventId(eventId)
                 : participantRepository.findByEventIdAndIdIn(eventId, participantIds);
@@ -60,6 +65,12 @@ public class InvitationService {
             cards.add(new InvitationPrintCard(
                     participant.getDisplayName(), participant.getTableLabel(), invitation.invitationUrl()));
         }
+        auditLogService.record(
+                staffAccountId,
+                AuditAction.INVITATION_BATCH_REGENERATED,
+                eventId,
+                null,
+                participants.size() + " invitation(s) regeneree(s) en lot.");
         return cards;
     }
 

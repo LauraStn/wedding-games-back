@@ -2,12 +2,16 @@ package com.weddinggames.backend.participant;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.weddinggames.backend.common.audit.AuditAction;
+import com.weddinggames.backend.common.audit.AuditLogService;
 import com.weddinggames.backend.common.exception.BusinessRuleViolationException;
+import com.weddinggames.backend.event.WeddingEvent;
 import com.weddinggames.backend.event.WeddingEventRepository;
 import com.weddinggames.backend.exclusion.ExclusionType;
 import com.weddinggames.backend.exclusion.PairingExclusionRepository;
@@ -24,6 +28,7 @@ class ParticipantServiceTest {
 
     private ParticipantRepository participantRepository;
     private PairingExclusionRepository pairingExclusionRepository;
+    private AuditLogService auditLogService;
     private ParticipantService service;
 
     @BeforeEach
@@ -31,33 +36,49 @@ class ParticipantServiceTest {
         participantRepository = mock(ParticipantRepository.class);
         WeddingEventRepository weddingEventRepository = mock(WeddingEventRepository.class);
         pairingExclusionRepository = mock(PairingExclusionRepository.class);
-        service = new ParticipantService(participantRepository, weddingEventRepository, pairingExclusionRepository);
+        auditLogService = mock(AuditLogService.class);
+        service = new ParticipantService(
+                participantRepository, weddingEventRepository, pairingExclusionRepository, auditLogService);
+    }
+
+    private Participant mockParticipant(UUID id) {
+        Participant participant = mock(Participant.class);
+        WeddingEvent event = mock(WeddingEvent.class);
+        when(event.getId()).thenReturn(UUID.randomUUID());
+        when(participant.getEvent()).thenReturn(event);
+        when(participantRepository.findById(id)).thenReturn(Optional.of(participant));
+        return participant;
     }
 
     @Test
     void deletingAParticipantInvolvedInAHardExclusionIsRefused() {
         UUID id = UUID.randomUUID();
-        when(participantRepository.existsById(id)).thenReturn(true);
+        mockParticipant(id);
         when(pairingExclusionRepository.existsByExclusionTypeAndParticipantAIdOrExclusionTypeAndParticipantBId(
                         ExclusionType.HARD, id, ExclusionType.HARD, id))
                 .thenReturn(true);
 
-        assertThatThrownBy(() -> service.delete(id))
+        assertThatThrownBy(() -> service.delete(id, UUID.randomUUID()))
                 .isInstanceOf(BusinessRuleViolationException.class)
                 .hasMessageContaining("exclusion absolue");
 
         verify(participantRepository, never()).deleteById(id);
+        verify(auditLogService, never()).record(any(), any(), any(), any(), any());
     }
 
     @Test
     void deletingAParticipantWithoutAnyHardExclusionIsAllowed() {
         UUID id = UUID.randomUUID();
-        when(participantRepository.existsById(id)).thenReturn(true);
+        Participant participant = mockParticipant(id);
         when(pairingExclusionRepository.existsByExclusionTypeAndParticipantAIdOrExclusionTypeAndParticipantBId(
                         ExclusionType.HARD, id, ExclusionType.HARD, id))
                 .thenReturn(false);
+        UUID staffAccountId = UUID.randomUUID();
 
-        service.delete(id);
+        service.delete(id, staffAccountId);
+
+        verify(auditLogService)
+                .record(staffAccountId, AuditAction.PARTICIPANT_DELETED, participant.getEvent().getId(), id, null);
 
         verify(participantRepository).deleteById(id);
     }

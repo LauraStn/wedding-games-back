@@ -1,5 +1,7 @@
 package com.weddinggames.backend.participant;
 
+import com.weddinggames.backend.common.audit.AuditAction;
+import com.weddinggames.backend.common.audit.AuditLogService;
 import com.weddinggames.backend.common.exception.BusinessRuleViolationException;
 import com.weddinggames.backend.common.exception.NotFoundException;
 import com.weddinggames.backend.event.WeddingEvent;
@@ -19,14 +21,17 @@ public class ParticipantService {
     private final ParticipantRepository participantRepository;
     private final WeddingEventRepository weddingEventRepository;
     private final PairingExclusionRepository pairingExclusionRepository;
+    private final AuditLogService auditLogService;
 
     public ParticipantService(
             ParticipantRepository participantRepository,
             WeddingEventRepository weddingEventRepository,
-            PairingExclusionRepository pairingExclusionRepository) {
+            PairingExclusionRepository pairingExclusionRepository,
+            AuditLogService auditLogService) {
         this.participantRepository = participantRepository;
         this.weddingEventRepository = weddingEventRepository;
         this.pairingExclusionRepository = pairingExclusionRepository;
+        this.auditLogService = auditLogService;
     }
 
     @Transactional(readOnly = true)
@@ -75,16 +80,20 @@ public class ParticipantService {
     }
 
     @Transactional
-    public void delete(UUID id) {
-        if (!participantRepository.existsById(id)) {
-            throw new NotFoundException("Participant introuvable.");
-        }
+    public void delete(UUID id, UUID staffAccountId) {
+        Participant participant = get(id);
         if (pairingExclusionRepository.existsByExclusionTypeAndParticipantAIdOrExclusionTypeAndParticipantBId(
                 ExclusionType.HARD, id, ExclusionType.HARD, id)) {
             throw new BusinessRuleViolationException(
                     "PARTICIPANT_HAS_HARD_EXCLUSION",
                     "Ce participant est implique dans une exclusion absolue (HARD) et ne peut pas etre supprime.");
         }
+        auditLogService.record(
+                staffAccountId,
+                AuditAction.PARTICIPANT_DELETED,
+                participant.getEvent().getId(),
+                id,
+                participant.getDisplayName());
         participantRepository.deleteById(id);
     }
 

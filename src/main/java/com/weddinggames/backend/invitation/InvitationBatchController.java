@@ -1,6 +1,7 @@
 package com.weddinggames.backend.invitation;
 
 import com.weddinggames.backend.invitation.dto.InvitationBatchRequest;
+import com.weddinggames.backend.security.AuthenticatedActor;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import java.util.UUID;
@@ -9,6 +10,7 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -37,9 +39,11 @@ public class InvitationBatchController {
             description = "Les jetons bruts ne sont jamais retournes en JSON: ils n'existent que le temps de "
                     + "produire les QR de cette planche, puis disparaissent definitivement.")
     public ResponseEntity<byte[]> generateBatchAndPrintSheet(
-            @PathVariable UUID eventId, @RequestBody(required = false) InvitationBatchRequest request) {
+            @PathVariable UUID eventId,
+            @RequestBody(required = false) InvitationBatchRequest request,
+            @AuthenticationPrincipal AuthenticatedActor actor) {
         var participantIds = request == null ? null : request.participantIds();
-        var cards = invitationService.generateBatch(eventId, participantIds);
+        var cards = invitationService.generateBatch(eventId, participantIds, actor.staffAccountId());
         byte[] pdf = invitationPrintSheetService.buildPrintSheet(cards);
         return ResponseEntity.ok()
                 .contentType(MediaType.APPLICATION_PDF)

@@ -73,7 +73,12 @@ public class DevSeedDataRunner implements ApplicationRunner {
         if (pairingConstraintService.findExclusion(eventId, participantAId, participantBId).isPresent()) {
             return;
         }
+        // null staffAccountId: this is system-seeded fixture data at startup, not a real admin
+        // action, so AuditLogService intentionally skips logging it rather than attributing it
+        // to nobody.
         pairingExclusionService.create(
-                eventId, new PairingExclusionCreateRequest(participantAId, participantBId, reason, ExclusionType.HARD));
+                eventId,
+                new PairingExclusionCreateRequest(participantAId, participantBId, reason, ExclusionType.HARD),
+                null);
     }
 }
