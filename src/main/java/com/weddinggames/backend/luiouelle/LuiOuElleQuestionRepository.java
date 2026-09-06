@@ -14,4 +14,6 @@ public interface LuiOuElleQuestionRepository extends JpaRepository<LuiOuElleQues
     long countByAuthorId(UUID authorId);
 
     List<LuiOuElleQuestion> findByEventId(UUID eventId);
+
+    List<LuiOuElleQuestion> findByEventIdAndStatus(UUID eventId, LuiOuElleQuestionStatus status);
 }
