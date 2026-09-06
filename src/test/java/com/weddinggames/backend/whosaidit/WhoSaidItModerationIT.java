@@ -1,6 +1,8 @@
-package com.weddinggames.backend.luiouelle;
+package com.weddinggames.backend.whosaidit;
 
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -14,14 +16,14 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 
 /** Each test creates its own dedicated event: independent from every other IT class. */
-class LuiOuElleSelectionIT extends AbstractIntegrationTest {
+class WhoSaidItModerationIT extends AbstractIntegrationTest {
 
     @Autowired
     private WeddingEventRepository weddingEventRepository;
 
     private WeddingEvent createEvent() {
-        return weddingEventRepository.save(new WeddingEvent(
-                "lui-ou-elle-selection-test-" + UUID.randomUUID(), "Lui ou Elle Selection Test", "fr-FR"));
+        return weddingEventRepository.save(
+                new WeddingEvent("who-said-it-mod-test-" + UUID.randomUUID(), "Who Said It Moderation Test", "fr-FR"));
     }
 
     private UUID createParticipant(Cookie adminCookie, UUID eventId, String displayName) throws Exception {
@@ -47,8 +49,8 @@ class LuiOuElleSelectionIT extends AbstractIntegrationTest {
                 .andExpect(status().isOk());
     }
 
-    private UUID proposeAndAccept(Cookie adminCookie, Cookie participantCookie, String content) throws Exception {
-        var result = mockMvc.perform(post("/api/v1/lui-ou-elle/questions")
+    private UUID proposeQuestion(Cookie participantCookie, String content) throws Exception {
+        var result = mockMvc.perform(post("/api/v1/who-said-it/questions")
                         .cookie(participantCookie)
                         .contentType("application/json")
                         .content("""
@@ -56,82 +58,79 @@ class LuiOuElleSelectionIT extends AbstractIntegrationTest {
                                 """.formatted(content)))
                 .andExpect(status().isCreated())
                 .andReturn();
-        UUID questionId = UUID.fromString(objectMapper
+        return UUID.fromString(objectMapper
                 .readTree(result.getResponse().getContentAsString())
                 .get("id")
                 .asText());
-        mockMvc.perform(post("/api/v1/staff/lui-ou-elle/questions/{id}/accept", questionId).cookie(adminCookie))
+    }
+
+    @Test
+    void staffCanListAcceptRejectAndCorrectAProposedQuestion() throws Exception {
+        Cookie adminCookie = loginAsNewStaff(StaffRole.ADMIN);
+        WeddingEvent event = createEvent();
+        UUID alice = createParticipant(adminCookie, event.getId(), "Alice");
+        openLobby(adminCookie, event.getId());
+        Cookie aliceCookie = loginAsParticipant(alice);
+        UUID questionId = proposeQuestion(aliceCookie, "Qui est le plus radin ?");
+
+        mockMvc.perform(
+                        get("/api/v1/staff/events/{eventId}/who-said-it/questions", event.getId())
+                                .cookie(adminCookie))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$", org.hamcrest.Matchers.hasSize(1)))
+                .andExpect(jsonPath("$[0].status").value("PENDING"));
+
+        mockMvc.perform(post("/api/v1/staff/who-said-it/questions/{id}/accept", questionId).cookie(adminCookie))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("ACCEPTED"));
+
+        mockMvc.perform(put("/api/v1/staff/who-said-it/questions/{id}/content", questionId)
+                        .cookie(adminCookie)
+                        .contentType("application/json")
+                        .content("""
+                                {"content":"Qui est le plus generreux ?"}
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.content").value("Qui est le plus generreux ?"))
+                .andExpect(jsonPath("$.status").value("ACCEPTED"));
+
+        mockMvc.perform(post("/api/v1/staff/who-said-it/questions/{id}/reject", questionId).cookie(adminCookie))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("REJECTED"));
+    }
+
+    @Test
+    void editingAQuestionAfterAcceptanceSendsItBackToPendingForReview() throws Exception {
+        Cookie adminCookie = loginAsNewStaff(StaffRole.ADMIN);
+        WeddingEvent event = createEvent();
+        UUID alice = createParticipant(adminCookie, event.getId(), "Alice");
+        openLobby(adminCookie, event.getId());
+        Cookie aliceCookie = loginAsParticipant(alice);
+        UUID questionId = proposeQuestion(aliceCookie, "Qui est le plus radin ?");
+
+        mockMvc.perform(post("/api/v1/staff/who-said-it/questions/{id}/accept", questionId).cookie(adminCookie))
                 .andExpect(status().isOk());
-        return questionId;
+
+        mockMvc.perform(put("/api/v1/who-said-it/questions/{id}", questionId)
+                        .cookie(aliceCookie)
+                        .contentType("application/json")
+                        .content("""
+                                {"content":"Version modifiee par Alice"}
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("PENDING"));
     }
 
     @Test
-    void selectsAnAcceptedQuestionAndMarksItPlayed() throws Exception {
+    void participantCannotModerateQuestions() throws Exception {
         Cookie adminCookie = loginAsNewStaff(StaffRole.ADMIN);
         WeddingEvent event = createEvent();
         UUID alice = createParticipant(adminCookie, event.getId(), "Alice");
         openLobby(adminCookie, event.getId());
         Cookie aliceCookie = loginAsParticipant(alice);
-        UUID questionId = proposeAndAccept(adminCookie, aliceCookie, "Qui est le plus radin ?");
+        UUID questionId = proposeQuestion(aliceCookie, "Qui est le plus radin ?");
 
-        mockMvc.perform(post(
-                        "/api/v1/staff/events/{eventId}/lui-ou-elle/questions/select-random", event.getId())
-                        .cookie(adminCookie))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.id").value(questionId.toString()))
-                .andExpect(jsonPath("$.status").value("PLAYED"));
-    }
-
-    @Test
-    void neverSelectsTheSameQuestionTwiceAcrossRepeatedDraws() throws Exception {
-        Cookie adminCookie = loginAsNewStaff(StaffRole.ADMIN);
-        WeddingEvent event = createEvent();
-        UUID alice = createParticipant(adminCookie, event.getId(), "Alice");
-        openLobby(adminCookie, event.getId());
-        Cookie aliceCookie = loginAsParticipant(alice);
-        UUID first = proposeAndAccept(adminCookie, aliceCookie, "Question un ?");
-        UUID second = proposeAndAccept(adminCookie, aliceCookie, "Question deux ?");
-
-        var firstDraw = mockMvc.perform(post(
-                        "/api/v1/staff/events/{eventId}/lui-ou-elle/questions/select-random", event.getId())
-                        .cookie(adminCookie))
-                .andExpect(status().isOk())
-                .andReturn();
-        UUID firstDrawnId = UUID.fromString(objectMapper
-                .readTree(firstDraw.getResponse().getContentAsString())
-                .get("id")
-                .asText());
-        UUID expectedRemaining = firstDrawnId.equals(first) ? second : first;
-
-        mockMvc.perform(post(
-                        "/api/v1/staff/events/{eventId}/lui-ou-elle/questions/select-random", event.getId())
-                        .cookie(adminCookie))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.id").value(expectedRemaining.toString()));
-    }
-
-    @Test
-    void rejectsSelectionWhenNoQuestionIsAccepted() throws Exception {
-        Cookie adminCookie = loginAsNewStaff(StaffRole.ADMIN);
-        WeddingEvent event = createEvent();
-
-        mockMvc.perform(post(
-                        "/api/v1/staff/events/{eventId}/lui-ou-elle/questions/select-random", event.getId())
-                        .cookie(adminCookie))
-                .andExpect(status().isConflict())
-                .andExpect(jsonPath("$.code").value("NO_ACCEPTED_LUI_OU_ELLE_QUESTION"));
-    }
-
-    @Test
-    void participantCannotTriggerSelection() throws Exception {
-        Cookie adminCookie = loginAsNewStaff(StaffRole.ADMIN);
-        WeddingEvent event = createEvent();
-        UUID alice = createParticipant(adminCookie, event.getId(), "Alice");
-        Cookie aliceCookie = loginAsParticipant(alice);
-
-        mockMvc.perform(post(
-                        "/api/v1/staff/events/{eventId}/lui-ou-elle/questions/select-random", event.getId())
-                        .cookie(aliceCookie))
+        mockMvc.perform(post("/api/v1/staff/who-said-it/questions/{id}/accept", questionId).cookie(aliceCookie))
                 .andExpect(status().isForbidden());
     }
 }

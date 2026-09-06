@@ -1,4 +1,4 @@
-package com.weddinggames.backend.luiouelle;
+package com.weddinggames.backend.whosaidit;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -16,14 +16,14 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 
 /** Each test creates its own dedicated event: independent from every other IT class. */
-class LuiOuElleQuestionIT extends AbstractIntegrationTest {
+class WhoSaidItQuestionIT extends AbstractIntegrationTest {
 
     @Autowired
     private WeddingEventRepository weddingEventRepository;
 
     private WeddingEvent createEvent() {
         return weddingEventRepository.save(
-                new WeddingEvent("lui-ou-elle-test-" + UUID.randomUUID(), "Lui ou Elle Test Event", "fr-FR"));
+                new WeddingEvent("who-said-it-test-" + UUID.randomUUID(), "Who Said It Test Event", "fr-FR"));
     }
 
     private UUID createParticipant(Cookie adminCookie, UUID eventId, String displayName) throws Exception {
@@ -57,7 +57,7 @@ class LuiOuElleQuestionIT extends AbstractIntegrationTest {
         openLobby(adminCookie, event.getId());
         Cookie aliceCookie = loginAsParticipant(alice);
 
-        mockMvc.perform(post("/api/v1/lui-ou-elle/questions")
+        mockMvc.perform(post("/api/v1/who-said-it/questions")
                         .cookie(aliceCookie)
                         .contentType("application/json")
                         .content("""
@@ -67,7 +67,7 @@ class LuiOuElleQuestionIT extends AbstractIntegrationTest {
                 .andExpect(jsonPath("$.content").value("Qui est le plus bordelique ?"))
                 .andExpect(jsonPath("$.authorId").value(alice.toString()));
 
-        mockMvc.perform(get("/api/v1/lui-ou-elle/questions/me").cookie(aliceCookie))
+        mockMvc.perform(get("/api/v1/who-said-it/questions/me").cookie(aliceCookie))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$", org.hamcrest.Matchers.hasSize(1)));
     }
@@ -81,7 +81,7 @@ class LuiOuElleQuestionIT extends AbstractIntegrationTest {
         Cookie aliceCookie = loginAsParticipant(alice);
 
         for (int i = 0; i < 2; i++) {
-            mockMvc.perform(post("/api/v1/lui-ou-elle/questions")
+            mockMvc.perform(post("/api/v1/who-said-it/questions")
                             .cookie(aliceCookie)
                             .contentType("application/json")
                             .content("""
@@ -90,14 +90,14 @@ class LuiOuElleQuestionIT extends AbstractIntegrationTest {
                     .andExpect(status().isCreated());
         }
 
-        mockMvc.perform(post("/api/v1/lui-ou-elle/questions")
+        mockMvc.perform(post("/api/v1/who-said-it/questions")
                         .cookie(aliceCookie)
                         .contentType("application/json")
                         .content("""
                                 {"content":"Question de trop ?"}
                                 """))
                 .andExpect(status().isConflict())
-                .andExpect(jsonPath("$.code").value("LUI_OU_ELLE_QUESTION_LIMIT_REACHED"));
+                .andExpect(jsonPath("$.code").value("WHO_SAID_IT_QUESTION_LIMIT_REACHED"));
     }
 
     @Test
@@ -107,7 +107,7 @@ class LuiOuElleQuestionIT extends AbstractIntegrationTest {
         UUID alice = createParticipant(adminCookie, event.getId(), "Alice");
         Cookie aliceCookie = loginAsParticipant(alice);
 
-        mockMvc.perform(post("/api/v1/lui-ou-elle/questions")
+        mockMvc.perform(post("/api/v1/who-said-it/questions")
                         .cookie(aliceCookie)
                         .contentType("application/json")
                         .content("""
@@ -125,7 +125,7 @@ class LuiOuElleQuestionIT extends AbstractIntegrationTest {
         openLobby(adminCookie, event.getId());
         Cookie aliceCookie = loginAsParticipant(alice);
 
-        var created = mockMvc.perform(post("/api/v1/lui-ou-elle/questions")
+        var created = mockMvc.perform(post("/api/v1/who-said-it/questions")
                         .cookie(aliceCookie)
                         .contentType("application/json")
                         .content("""
@@ -138,7 +138,7 @@ class LuiOuElleQuestionIT extends AbstractIntegrationTest {
                 .get("id")
                 .asText());
 
-        mockMvc.perform(put("/api/v1/lui-ou-elle/questions/{id}", questionId)
+        mockMvc.perform(put("/api/v1/who-said-it/questions/{id}", questionId)
                         .cookie(aliceCookie)
                         .contentType("application/json")
                         .content("""
@@ -156,7 +156,7 @@ class LuiOuElleQuestionIT extends AbstractIntegrationTest {
         openLobby(adminCookie, event.getId());
         Cookie aliceCookie = loginAsParticipant(alice);
 
-        var created = mockMvc.perform(post("/api/v1/lui-ou-elle/questions")
+        var created = mockMvc.perform(post("/api/v1/who-said-it/questions")
                         .cookie(aliceCookie)
                         .contentType("application/json")
                         .content("""
@@ -172,7 +172,7 @@ class LuiOuElleQuestionIT extends AbstractIntegrationTest {
         mockMvc.perform(post("/api/v1/staff/events/{eventId}/lobby/lock", event.getId()).cookie(adminCookie))
                 .andExpect(status().isOk());
 
-        mockMvc.perform(put("/api/v1/lui-ou-elle/questions/{id}", questionId)
+        mockMvc.perform(put("/api/v1/who-said-it/questions/{id}", questionId)
                         .cookie(aliceCookie)
                         .contentType("application/json")
                         .content("""
@@ -192,7 +192,7 @@ class LuiOuElleQuestionIT extends AbstractIntegrationTest {
         Cookie aliceCookie = loginAsParticipant(alice);
         Cookie bobCookie = loginAsParticipant(bob);
 
-        var created = mockMvc.perform(post("/api/v1/lui-ou-elle/questions")
+        var created = mockMvc.perform(post("/api/v1/who-said-it/questions")
                         .cookie(aliceCookie)
                         .contentType("application/json")
                         .content("""
@@ -205,7 +205,7 @@ class LuiOuElleQuestionIT extends AbstractIntegrationTest {
                 .get("id")
                 .asText());
 
-        mockMvc.perform(put("/api/v1/lui-ou-elle/questions/{id}", questionId)
+        mockMvc.perform(put("/api/v1/who-said-it/questions/{id}", questionId)
                         .cookie(bobCookie)
                         .contentType("application/json")
                         .content("""
@@ -220,7 +220,7 @@ class LuiOuElleQuestionIT extends AbstractIntegrationTest {
         WeddingEvent event = createEvent();
         openLobby(adminCookie, event.getId());
 
-        mockMvc.perform(post("/api/v1/lui-ou-elle/questions")
+        mockMvc.perform(post("/api/v1/who-said-it/questions")
                         .cookie(adminCookie)
                         .contentType("application/json")
                         .content("""

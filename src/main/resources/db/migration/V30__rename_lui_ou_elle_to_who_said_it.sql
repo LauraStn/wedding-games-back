@@ -1,0 +1,7 @@
+ALTER TABLE lui_ou_elle_question RENAME TO who_said_it_question;
+
+ALTER TABLE who_said_it_question
+    RENAME CONSTRAINT ck_lui_ou_elle_question_status TO ck_who_said_it_question_status;
+
+ALTER INDEX ix_lui_ou_elle_question_event_id RENAME TO ix_who_said_it_question_event_id;
+ALTER INDEX ix_lui_ou_elle_question_author_id RENAME TO ix_who_said_it_question_author_id;

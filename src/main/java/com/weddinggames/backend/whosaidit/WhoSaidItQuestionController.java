@@ -1,7 +1,7 @@
-package com.weddinggames.backend.luiouelle;
+package com.weddinggames.backend.whosaidit;
 
-import com.weddinggames.backend.luiouelle.dto.LuiOuElleQuestionRequest;
-import com.weddinggames.backend.luiouelle.dto.LuiOuElleQuestionResponse;
+import com.weddinggames.backend.whosaidit.dto.WhoSaidItQuestionRequest;
+import com.weddinggames.backend.whosaidit.dto.WhoSaidItQuestionResponse;
 import com.weddinggames.backend.security.AuthenticatedActor;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -21,40 +21,40 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
-@RequestMapping("/api/v1/lui-ou-elle/questions")
+@RequestMapping("/api/v1/who-said-it/questions")
 @PreAuthorize("hasRole('PARTICIPANT')")
-@Tag(name = "Lui ou Elle - Propositions", description = "Proposition et modification de questions par les invites, tant que le salon reste ouvert")
-public class LuiOuElleQuestionController {
+@Tag(name = "Who Said It - Propositions", description = "Proposition et modification de questions par les invites, tant que le salon reste ouvert")
+public class WhoSaidItQuestionController {
 
-    private final LuiOuElleQuestionService questionService;
+    private final WhoSaidItQuestionService questionService;
 
-    public LuiOuElleQuestionController(LuiOuElleQuestionService questionService) {
+    public WhoSaidItQuestionController(WhoSaidItQuestionService questionService) {
         this.questionService = questionService;
     }
 
     @GetMapping("/me")
     @Operation(summary = "Liste mes questions proposees")
-    public List<LuiOuElleQuestionResponse> mine(@AuthenticationPrincipal AuthenticatedActor actor) {
+    public List<WhoSaidItQuestionResponse> mine(@AuthenticationPrincipal AuthenticatedActor actor) {
         return questionService.listMine(actor.participantId()).stream()
-                .map(LuiOuElleQuestionResponse::from)
+                .map(WhoSaidItQuestionResponse::from)
                 .toList();
     }
 
     @PostMapping
     @Operation(summary = "Propose une nouvelle question (limite au nombre de questions par participant)")
-    public ResponseEntity<LuiOuElleQuestionResponse> propose(
-            @AuthenticationPrincipal AuthenticatedActor actor, @Valid @RequestBody LuiOuElleQuestionRequest request) {
+    public ResponseEntity<WhoSaidItQuestionResponse> propose(
+            @AuthenticationPrincipal AuthenticatedActor actor, @Valid @RequestBody WhoSaidItQuestionRequest request) {
         var question = questionService.propose(actor.participantId(), request.content(), request.revealAuthorConsent());
-        return ResponseEntity.status(HttpStatus.CREATED).body(LuiOuElleQuestionResponse.from(question));
+        return ResponseEntity.status(HttpStatus.CREATED).body(WhoSaidItQuestionResponse.from(question));
     }
 
     @PutMapping("/{id}")
     @Operation(summary = "Modifie une de mes questions, tant que le salon reste ouvert")
-    public LuiOuElleQuestionResponse update(
+    public WhoSaidItQuestionResponse update(
             @AuthenticationPrincipal AuthenticatedActor actor,
             @PathVariable UUID id,
-            @Valid @RequestBody LuiOuElleQuestionRequest request) {
-        return LuiOuElleQuestionResponse.from(
+            @Valid @RequestBody WhoSaidItQuestionRequest request) {
+        return WhoSaidItQuestionResponse.from(
                 questionService.update(actor.participantId(), id, request.content(), request.revealAuthorConsent()));
     }
 }

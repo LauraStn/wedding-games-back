@@ -1,6 +1,6 @@
-package com.weddinggames.backend.luiouelle;
+package com.weddinggames.backend.whosaidit;
 
-import com.weddinggames.backend.luiouelle.dto.LuiOuElleQuestionResponse;
+import com.weddinggames.backend.whosaidit.dto.WhoSaidItQuestionResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import java.util.UUID;
@@ -11,14 +11,14 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
-@RequestMapping("/api/v1/staff/events/{eventId}/lui-ou-elle/questions")
+@RequestMapping("/api/v1/staff/events/{eventId}/who-said-it/questions")
 @PreAuthorize("hasAnyRole('INTERVENANT','ADMIN')")
-@Tag(name = "Intervenant - Selection Lui ou Elle", description = "Tirage aleatoire d'une question acceptee pour le jeu")
-public class LuiOuElleSelectionController {
+@Tag(name = "Intervenant - Selection Who Said It", description = "Tirage aleatoire d'une question acceptee pour le jeu")
+public class WhoSaidItSelectionController {
 
-    private final LuiOuElleSelectionService selectionService;
+    private final WhoSaidItSelectionService selectionService;
 
-    public LuiOuElleSelectionController(LuiOuElleSelectionService selectionService) {
+    public WhoSaidItSelectionController(WhoSaidItSelectionService selectionService) {
         this.selectionService = selectionService;
     }
 
@@ -29,7 +29,7 @@ public class LuiOuElleSelectionController {
                     + "l'auteur n'est renvoye que s'il a consenti a etre revele: c'est le moment ou ce "
                     + "consentement compte le plus, contrairement a la moderation ou le staff voit toujours "
                     + "qui a propose quoi.")
-    public LuiOuElleQuestionResponse selectRandom(@PathVariable UUID eventId) {
-        return LuiOuElleQuestionResponse.from(selectionService.selectRandom(eventId));
+    public WhoSaidItQuestionResponse selectRandom(@PathVariable UUID eventId) {
+        return WhoSaidItQuestionResponse.from(selectionService.selectRandom(eventId));
     }
 }

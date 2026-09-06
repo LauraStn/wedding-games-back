@@ -1,6 +1,5 @@
-package com.weddinggames.backend.luiouelle;
+package com.weddinggames.backend.whosaidit;
 
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -15,14 +14,14 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 
 /** Each test creates its own dedicated event: independent from every other IT class. */
-class LuiOuElleRevealConsentIT extends AbstractIntegrationTest {
+class WhoSaidItSelectionIT extends AbstractIntegrationTest {
 
     @Autowired
     private WeddingEventRepository weddingEventRepository;
 
     private WeddingEvent createEvent() {
         return weddingEventRepository.save(new WeddingEvent(
-                "lui-ou-elle-consent-test-" + UUID.randomUUID(), "Lui ou Elle Consent Test", "fr-FR"));
+                "who-said-it-selection-test-" + UUID.randomUUID(), "Who Said It Selection Test", "fr-FR"));
     }
 
     private UUID createParticipant(Cookie adminCookie, UUID eventId, String displayName) throws Exception {
@@ -48,73 +47,91 @@ class LuiOuElleRevealConsentIT extends AbstractIntegrationTest {
                 .andExpect(status().isOk());
     }
 
-    private UUID proposeAndAccept(Cookie adminCookie, Cookie participantCookie, String content, boolean consent)
-            throws Exception {
-        var result = mockMvc.perform(post("/api/v1/lui-ou-elle/questions")
+    private UUID proposeAndAccept(Cookie adminCookie, Cookie participantCookie, String content) throws Exception {
+        var result = mockMvc.perform(post("/api/v1/who-said-it/questions")
                         .cookie(participantCookie)
                         .contentType("application/json")
                         .content("""
-                                {"content":"%s","revealAuthorConsent":%s}
-                                """.formatted(content, consent)))
+                                {"content":"%s"}
+                                """.formatted(content)))
                 .andExpect(status().isCreated())
                 .andReturn();
         UUID questionId = UUID.fromString(objectMapper
                 .readTree(result.getResponse().getContentAsString())
                 .get("id")
                 .asText());
-        mockMvc.perform(post("/api/v1/staff/lui-ou-elle/questions/{id}/accept", questionId).cookie(adminCookie))
+        mockMvc.perform(post("/api/v1/staff/who-said-it/questions/{id}/accept", questionId).cookie(adminCookie))
                 .andExpect(status().isOk());
         return questionId;
     }
 
     @Test
-    void hidesTheAuthorNameAtSelectionTimeWhenConsentWasNotGiven() throws Exception {
+    void selectsAnAcceptedQuestionAndMarksItPlayed() throws Exception {
         Cookie adminCookie = loginAsNewStaff(StaffRole.ADMIN);
         WeddingEvent event = createEvent();
         UUID alice = createParticipant(adminCookie, event.getId(), "Alice");
         openLobby(adminCookie, event.getId());
         Cookie aliceCookie = loginAsParticipant(alice);
-        proposeAndAccept(adminCookie, aliceCookie, "Qui est le plus radin ?", false);
+        UUID questionId = proposeAndAccept(adminCookie, aliceCookie, "Qui est le plus radin ?");
 
         mockMvc.perform(post(
-                        "/api/v1/staff/events/{eventId}/lui-ou-elle/questions/select-random", event.getId())
+                        "/api/v1/staff/events/{eventId}/who-said-it/questions/select-random", event.getId())
                         .cookie(adminCookie))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.authorDisplayName").value(org.hamcrest.Matchers.nullValue()))
-                .andExpect(jsonPath("$.revealAuthorConsent").value(false));
+                .andExpect(jsonPath("$.id").value(questionId.toString()))
+                .andExpect(jsonPath("$.status").value("PLAYED"));
     }
 
     @Test
-    void revealsTheAuthorNameAtSelectionTimeWhenConsentWasGiven() throws Exception {
+    void neverSelectsTheSameQuestionTwiceAcrossRepeatedDraws() throws Exception {
         Cookie adminCookie = loginAsNewStaff(StaffRole.ADMIN);
         WeddingEvent event = createEvent();
         UUID alice = createParticipant(adminCookie, event.getId(), "Alice");
         openLobby(adminCookie, event.getId());
         Cookie aliceCookie = loginAsParticipant(alice);
-        proposeAndAccept(adminCookie, aliceCookie, "Qui est le plus radin ?", true);
+        UUID first = proposeAndAccept(adminCookie, aliceCookie, "Question un ?");
+        UUID second = proposeAndAccept(adminCookie, aliceCookie, "Question deux ?");
 
-        mockMvc.perform(post(
-                        "/api/v1/staff/events/{eventId}/lui-ou-elle/questions/select-random", event.getId())
+        var firstDraw = mockMvc.perform(post(
+                        "/api/v1/staff/events/{eventId}/who-said-it/questions/select-random", event.getId())
                         .cookie(adminCookie))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.authorDisplayName").value("Alice"))
-                .andExpect(jsonPath("$.revealAuthorConsent").value(true));
+                .andReturn();
+        UUID firstDrawnId = UUID.fromString(objectMapper
+                .readTree(firstDraw.getResponse().getContentAsString())
+                .get("id")
+                .asText());
+        UUID expectedRemaining = firstDrawnId.equals(first) ? second : first;
+
+        mockMvc.perform(post(
+                        "/api/v1/staff/events/{eventId}/who-said-it/questions/select-random", event.getId())
+                        .cookie(adminCookie))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(expectedRemaining.toString()));
     }
 
     @Test
-    void staffModerationListAlwaysShowsTheAuthorNameRegardlessOfConsent() throws Exception {
+    void rejectsSelectionWhenNoQuestionIsAccepted() throws Exception {
+        Cookie adminCookie = loginAsNewStaff(StaffRole.ADMIN);
+        WeddingEvent event = createEvent();
+
+        mockMvc.perform(post(
+                        "/api/v1/staff/events/{eventId}/who-said-it/questions/select-random", event.getId())
+                        .cookie(adminCookie))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.code").value("NO_ACCEPTED_WHO_SAID_IT_QUESTION"));
+    }
+
+    @Test
+    void participantCannotTriggerSelection() throws Exception {
         Cookie adminCookie = loginAsNewStaff(StaffRole.ADMIN);
         WeddingEvent event = createEvent();
         UUID alice = createParticipant(adminCookie, event.getId(), "Alice");
-        openLobby(adminCookie, event.getId());
         Cookie aliceCookie = loginAsParticipant(alice);
-        proposeAndAccept(adminCookie, aliceCookie, "Qui est le plus radin ?", false);
 
-        mockMvc.perform(
-                        get("/api/v1/staff/events/{eventId}/lui-ou-elle/questions", event.getId())
-                                .cookie(adminCookie))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$[0].authorDisplayName").value("Alice"))
-                .andExpect(jsonPath("$[0].revealAuthorConsent").value(false));
+        mockMvc.perform(post(
+                        "/api/v1/staff/events/{eventId}/who-said-it/questions/select-random", event.getId())
+                        .cookie(aliceCookie))
+                .andExpect(status().isForbidden());
     }
 }

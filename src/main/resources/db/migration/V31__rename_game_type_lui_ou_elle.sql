@@ -1,0 +1,4 @@
+UPDATE game SET type = 'WHO_SAID_IT' WHERE type = 'LUI_OU_ELLE';
+
+ALTER TABLE game DROP CONSTRAINT ck_game_type;
+ALTER TABLE game ADD CONSTRAINT ck_game_type CHECK (type IN ('QUIZ', 'WHO_SAID_IT', 'BLIND_TEST', 'CUSTOM'));

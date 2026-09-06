@@ -1,4 +1,4 @@
-package com.weddinggames.backend.luiouelle;
+package com.weddinggames.backend.whosaidit;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -10,61 +10,61 @@ import com.weddinggames.backend.participant.Participant;
 import org.junit.jupiter.api.Test;
 
 /** Pure unit test for the guarded PENDING/ACCEPTED/REJECTED/PLAYED status transitions. */
-class LuiOuElleQuestionTest {
+class WhoSaidItQuestionTest {
 
-    private LuiOuElleQuestion newQuestion() {
-        return new LuiOuElleQuestion(mock(WeddingEvent.class), mock(Participant.class), "Qui est le plus retard ?");
+    private WhoSaidItQuestion newQuestion() {
+        return new WhoSaidItQuestion(mock(WeddingEvent.class), mock(Participant.class), "Qui est le plus retard ?");
     }
 
     @Test
     void startsAsPending() {
-        assertThat(newQuestion().getStatus()).isEqualTo(LuiOuElleQuestionStatus.PENDING);
+        assertThat(newQuestion().getStatus()).isEqualTo(WhoSaidItQuestionStatus.PENDING);
     }
 
     @Test
     void acceptsFromPending() {
-        LuiOuElleQuestion question = newQuestion();
+        WhoSaidItQuestion question = newQuestion();
         question.accept();
-        assertThat(question.getStatus()).isEqualTo(LuiOuElleQuestionStatus.ACCEPTED);
+        assertThat(question.getStatus()).isEqualTo(WhoSaidItQuestionStatus.ACCEPTED);
     }
 
     @Test
     void rejectsFromPending() {
-        LuiOuElleQuestion question = newQuestion();
+        WhoSaidItQuestion question = newQuestion();
         question.reject();
-        assertThat(question.getStatus()).isEqualTo(LuiOuElleQuestionStatus.REJECTED);
+        assertThat(question.getStatus()).isEqualTo(WhoSaidItQuestionStatus.REJECTED);
     }
 
     @Test
     void aRejectionCanBeReconsideredIntoAnAcceptance() {
-        LuiOuElleQuestion question = newQuestion();
+        WhoSaidItQuestion question = newQuestion();
         question.reject();
         question.accept();
-        assertThat(question.getStatus()).isEqualTo(LuiOuElleQuestionStatus.ACCEPTED);
+        assertThat(question.getStatus()).isEqualTo(WhoSaidItQuestionStatus.ACCEPTED);
     }
 
     @Test
     void anAcceptanceCanBeReconsideredIntoARejection() {
-        LuiOuElleQuestion question = newQuestion();
+        WhoSaidItQuestion question = newQuestion();
         question.accept();
         question.reject();
-        assertThat(question.getStatus()).isEqualTo(LuiOuElleQuestionStatus.REJECTED);
+        assertThat(question.getStatus()).isEqualTo(WhoSaidItQuestionStatus.REJECTED);
     }
 
     @Test
     void onlyAnAcceptedQuestionCanBeMarkedPlayed() {
-        LuiOuElleQuestion pending = newQuestion();
+        WhoSaidItQuestion pending = newQuestion();
         assertThatThrownBy(pending::markPlayed).isInstanceOf(BusinessRuleViolationException.class);
 
-        LuiOuElleQuestion accepted = newQuestion();
+        WhoSaidItQuestion accepted = newQuestion();
         accepted.accept();
         accepted.markPlayed();
-        assertThat(accepted.getStatus()).isEqualTo(LuiOuElleQuestionStatus.PLAYED);
+        assertThat(accepted.getStatus()).isEqualTo(WhoSaidItQuestionStatus.PLAYED);
     }
 
     @Test
     void playedIsTerminalAndCannotBeAcceptedOrRejectedAgain() {
-        LuiOuElleQuestion question = newQuestion();
+        WhoSaidItQuestion question = newQuestion();
         question.accept();
         question.markPlayed();
 
@@ -74,7 +74,7 @@ class LuiOuElleQuestionTest {
 
     @Test
     void cannotCorrectOrReviseAPlayedQuestion() {
-        LuiOuElleQuestion question = newQuestion();
+        WhoSaidItQuestion question = newQuestion();
         question.accept();
         question.markPlayed();
 
@@ -90,19 +90,19 @@ class LuiOuElleQuestionTest {
 
     @Test
     void reviseByAuthorCanChangeTheRevealConsent() {
-        LuiOuElleQuestion question = newQuestion();
+        WhoSaidItQuestion question = newQuestion();
         question.reviseByAuthor("Nouveau texte", true);
         assertThat(question.isRevealAuthorConsent()).isTrue();
     }
 
     @Test
     void correctingDoesNotChangeTheModerationStatus() {
-        LuiOuElleQuestion question = newQuestion();
+        WhoSaidItQuestion question = newQuestion();
         question.accept();
 
         question.correct("Texte corrige");
 
         assertThat(question.getContent()).isEqualTo("Texte corrige");
-        assertThat(question.getStatus()).isEqualTo(LuiOuElleQuestionStatus.ACCEPTED);
+        assertThat(question.getStatus()).isEqualTo(WhoSaidItQuestionStatus.ACCEPTED);
     }
 }

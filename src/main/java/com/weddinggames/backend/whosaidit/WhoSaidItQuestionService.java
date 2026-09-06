@@ -1,4 +1,4 @@
-package com.weddinggames.backend.luiouelle;
+package com.weddinggames.backend.whosaidit;
 
 import com.weddinggames.backend.common.exception.BusinessRuleViolationException;
 import com.weddinggames.backend.common.exception.InvalidRequestException;
@@ -15,23 +15,23 @@ import org.springframework.transaction.annotation.Transactional;
 
 /**
  * Lets a guest propose (and, while the lobby is still open, edit) up to a configurable number of
- * "Lui ou Elle" questions about the couple, along with their consent to have their first name
- * revealed alongside it. Moderation (see {@link LuiOuElleModerationService}) and random selection
+ * "Who Said It" questions about the couple, along with their consent to have their first name
+ * revealed alongside it. Moderation (see {@link WhoSaidItModerationService}) and random selection
  * for play are handled by their own tickets/services downstream of this one.
  */
 @Service
-public class LuiOuElleQuestionService {
+public class WhoSaidItQuestionService {
 
-    private final LuiOuElleQuestionRepository questionRepository;
+    private final WhoSaidItQuestionRepository questionRepository;
     private final ParticipantRepository participantRepository;
     private final LobbyRepository lobbyRepository;
-    private final LuiOuElleProperties properties;
+    private final WhoSaidItProperties properties;
 
-    public LuiOuElleQuestionService(
-            LuiOuElleQuestionRepository questionRepository,
+    public WhoSaidItQuestionService(
+            WhoSaidItQuestionRepository questionRepository,
             ParticipantRepository participantRepository,
             LobbyRepository lobbyRepository,
-            LuiOuElleProperties properties) {
+            WhoSaidItProperties properties) {
         this.questionRepository = questionRepository;
         this.participantRepository = participantRepository;
         this.lobbyRepository = lobbyRepository;
@@ -39,12 +39,12 @@ public class LuiOuElleQuestionService {
     }
 
     @Transactional(readOnly = true)
-    public List<LuiOuElleQuestion> listMine(UUID participantId) {
+    public List<WhoSaidItQuestion> listMine(UUID participantId) {
         return questionRepository.findByAuthorId(participantId);
     }
 
     @Transactional
-    public LuiOuElleQuestion propose(UUID participantId, String content, boolean revealAuthorConsent) {
+    public WhoSaidItQuestion propose(UUID participantId, String content, boolean revealAuthorConsent) {
         Participant author = participantRepository
                 .findById(participantId)
                 .orElseThrow(() -> new NotFoundException("Participant introuvable."));
@@ -54,19 +54,19 @@ public class LuiOuElleQuestionService {
         long alreadyProposed = questionRepository.countByAuthorId(participantId);
         if (alreadyProposed >= properties.getMaxQuestionsPerParticipant()) {
             throw new BusinessRuleViolationException(
-                    "LUI_OU_ELLE_QUESTION_LIMIT_REACHED",
+                    "WHO_SAID_IT_QUESTION_LIMIT_REACHED",
                     "Vous avez deja propose le maximum de " + properties.getMaxQuestionsPerParticipant()
                             + " question(s).");
         }
 
-        LuiOuElleQuestion question =
-                new LuiOuElleQuestion(author.getEvent(), author, content.trim(), revealAuthorConsent);
+        WhoSaidItQuestion question =
+                new WhoSaidItQuestion(author.getEvent(), author, content.trim(), revealAuthorConsent);
         return questionRepository.save(question);
     }
 
     @Transactional
-    public LuiOuElleQuestion update(UUID participantId, UUID questionId, String content, boolean revealAuthorConsent) {
-        LuiOuElleQuestion question = questionRepository
+    public WhoSaidItQuestion update(UUID participantId, UUID questionId, String content, boolean revealAuthorConsent) {
+        WhoSaidItQuestion question = questionRepository
                 .findByIdAndAuthorId(questionId, participantId)
                 .orElseThrow(() -> new NotFoundException("Question introuvable."));
         requireLobbyOpen(question.getEvent().getId());
@@ -81,7 +81,7 @@ public class LuiOuElleQuestionService {
         if (lobby == null || lobby.getStatus() != LobbyStatus.OPEN) {
             throw new BusinessRuleViolationException(
                     "LOBBY_NOT_OPEN",
-                    "Le salon doit etre ouvert pour proposer ou modifier une question Lui ou Elle.");
+                    "Le salon doit etre ouvert pour proposer ou modifier une question Who Said It.");
         }
     }
 

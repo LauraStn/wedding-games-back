@@ -1,4 +1,4 @@
-package com.weddinggames.backend.luiouelle;
+package com.weddinggames.backend.whosaidit;
 
 import com.weddinggames.backend.common.exception.NotFoundException;
 import java.util.List;
@@ -7,47 +7,47 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 /**
- * Intervenant-facing moderation of guest-proposed "Lui ou Elle" questions: accept, reject
+ * Intervenant-facing moderation of guest-proposed "Who Said It" questions: accept, reject
  * (either can be reconsidered into the other), or correct a typo without changing the meaning.
  * Marking a question PLAYED is not exposed here: it happens as a side effect of the random
  * selection for play (a separate, downstream ticket), not as a standalone moderation action.
  */
 @Service
-public class LuiOuElleModerationService {
+public class WhoSaidItModerationService {
 
-    private final LuiOuElleQuestionRepository questionRepository;
+    private final WhoSaidItQuestionRepository questionRepository;
 
-    public LuiOuElleModerationService(LuiOuElleQuestionRepository questionRepository) {
+    public WhoSaidItModerationService(WhoSaidItQuestionRepository questionRepository) {
         this.questionRepository = questionRepository;
     }
 
     @Transactional(readOnly = true)
-    public List<LuiOuElleQuestion> listForEvent(UUID eventId) {
+    public List<WhoSaidItQuestion> listForEvent(UUID eventId) {
         return questionRepository.findByEventId(eventId);
     }
 
     @Transactional
-    public LuiOuElleQuestion accept(UUID questionId) {
-        LuiOuElleQuestion question = get(questionId);
+    public WhoSaidItQuestion accept(UUID questionId) {
+        WhoSaidItQuestion question = get(questionId);
         question.accept();
         return question;
     }
 
     @Transactional
-    public LuiOuElleQuestion reject(UUID questionId) {
-        LuiOuElleQuestion question = get(questionId);
+    public WhoSaidItQuestion reject(UUID questionId) {
+        WhoSaidItQuestion question = get(questionId);
         question.reject();
         return question;
     }
 
     @Transactional
-    public LuiOuElleQuestion correct(UUID questionId, String content) {
-        LuiOuElleQuestion question = get(questionId);
+    public WhoSaidItQuestion correct(UUID questionId, String content) {
+        WhoSaidItQuestion question = get(questionId);
         question.correct(content);
         return question;
     }
 
-    private LuiOuElleQuestion get(UUID questionId) {
+    private WhoSaidItQuestion get(UUID questionId) {
         return questionRepository
                 .findById(questionId)
                 .orElseThrow(() -> new NotFoundException("Question introuvable."));

@@ -14,7 +14,7 @@ import jakarta.persistence.Table;
 import java.util.Map;
 import java.util.Set;
 
-/** A configured "jeu" (quiz, lui-ou-elle, blind test...) attached to an event. */
+/** A configured "jeu" (quiz, who-said-it, blind test...) attached to an event. */
 @Entity
 @Table(name = "game")
 public class Game extends BaseEntity {

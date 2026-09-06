@@ -1,17 +1,17 @@
-package com.weddinggames.backend.luiouelle.dto;
+package com.weddinggames.backend.whosaidit.dto;
 
-import com.weddinggames.backend.luiouelle.LuiOuElleQuestion;
-import com.weddinggames.backend.luiouelle.LuiOuElleQuestionStatus;
+import com.weddinggames.backend.whosaidit.WhoSaidItQuestion;
+import com.weddinggames.backend.whosaidit.WhoSaidItQuestionStatus;
 import java.time.Instant;
 import java.util.UUID;
 
-public record LuiOuElleQuestionResponse(
+public record WhoSaidItQuestionResponse(
         UUID id,
         UUID eventId,
         UUID authorId,
         String authorDisplayName,
         String content,
-        LuiOuElleQuestionStatus status,
+        WhoSaidItQuestionStatus status,
         boolean revealAuthorConsent,
         Instant createdAt,
         Instant updatedAt) {
@@ -21,17 +21,17 @@ public record LuiOuElleQuestionResponse(
      * except for staff, who can already see {@code authorId} unconditionally (for moderation
      * accountability) and so gain nothing from the name being hidden too.
      */
-    public static LuiOuElleQuestionResponse from(LuiOuElleQuestion question) {
+    public static WhoSaidItQuestionResponse from(WhoSaidItQuestion question) {
         return from(question, false);
     }
 
-    public static LuiOuElleQuestionResponse forStaff(LuiOuElleQuestion question) {
+    public static WhoSaidItQuestionResponse forStaff(WhoSaidItQuestion question) {
         return from(question, true);
     }
 
-    private static LuiOuElleQuestionResponse from(LuiOuElleQuestion question, boolean revealAuthorAlways) {
+    private static WhoSaidItQuestionResponse from(WhoSaidItQuestion question, boolean revealAuthorAlways) {
         boolean revealName = revealAuthorAlways || question.isRevealAuthorConsent();
-        return new LuiOuElleQuestionResponse(
+        return new WhoSaidItQuestionResponse(
                 question.getId(),
                 question.getEvent().getId(),
                 question.getAuthor().getId(),

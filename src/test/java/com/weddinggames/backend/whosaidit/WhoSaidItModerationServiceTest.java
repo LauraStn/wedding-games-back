@@ -1,4 +1,4 @@
-package com.weddinggames.backend.luiouelle;
+package com.weddinggames.backend.whosaidit;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -13,38 +13,38 @@ import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-/** Pure unit test (Mockito, no Spring context) for staff moderation of Lui ou Elle questions. */
-class LuiOuElleModerationServiceTest {
+/** Pure unit test (Mockito, no Spring context) for staff moderation of Who Said It questions. */
+class WhoSaidItModerationServiceTest {
 
-    private LuiOuElleQuestionRepository questionRepository;
-    private LuiOuElleModerationService service;
+    private WhoSaidItQuestionRepository questionRepository;
+    private WhoSaidItModerationService service;
     private UUID questionId;
-    private LuiOuElleQuestion question;
+    private WhoSaidItQuestion question;
 
     @BeforeEach
     void setUp() {
-        questionRepository = mock(LuiOuElleQuestionRepository.class);
-        service = new LuiOuElleModerationService(questionRepository);
+        questionRepository = mock(WhoSaidItQuestionRepository.class);
+        service = new WhoSaidItModerationService(questionRepository);
         questionId = UUID.randomUUID();
-        question = new LuiOuElleQuestion(mock(WeddingEvent.class), mock(Participant.class), "Qui est le plus radin ?");
+        question = new WhoSaidItQuestion(mock(WeddingEvent.class), mock(Participant.class), "Qui est le plus radin ?");
         when(questionRepository.findById(questionId)).thenReturn(Optional.of(question));
     }
 
     @Test
     void acceptsAPendingQuestion() {
-        LuiOuElleQuestion accepted = service.accept(questionId);
-        assertThat(accepted.getStatus()).isEqualTo(LuiOuElleQuestionStatus.ACCEPTED);
+        WhoSaidItQuestion accepted = service.accept(questionId);
+        assertThat(accepted.getStatus()).isEqualTo(WhoSaidItQuestionStatus.ACCEPTED);
     }
 
     @Test
     void rejectsAPendingQuestion() {
-        LuiOuElleQuestion rejected = service.reject(questionId);
-        assertThat(rejected.getStatus()).isEqualTo(LuiOuElleQuestionStatus.REJECTED);
+        WhoSaidItQuestion rejected = service.reject(questionId);
+        assertThat(rejected.getStatus()).isEqualTo(WhoSaidItQuestionStatus.REJECTED);
     }
 
     @Test
     void correctsTheContentOfAQuestion() {
-        LuiOuElleQuestion corrected = service.correct(questionId, "Texte corrige");
+        WhoSaidItQuestion corrected = service.correct(questionId, "Texte corrige");
         assertThat(corrected.getContent()).isEqualTo("Texte corrige");
     }
 

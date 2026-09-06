@@ -1,6 +1,6 @@
-package com.weddinggames.backend.luiouelle;
+package com.weddinggames.backend.whosaidit;
 
-public enum LuiOuElleQuestionStatus {
+public enum WhoSaidItQuestionStatus {
     /** Just proposed by a guest, not yet reviewed by staff. */
     PENDING,
     /** Approved by staff: eligible for random selection during play (see the game-side ticket). */

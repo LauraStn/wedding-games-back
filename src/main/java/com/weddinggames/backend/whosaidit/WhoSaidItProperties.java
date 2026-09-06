@@ -1,9 +1,9 @@
-package com.weddinggames.backend.luiouelle;
+package com.weddinggames.backend.whosaidit;
 
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
-@ConfigurationProperties(prefix = "app.lui-ou-elle")
-public class LuiOuElleProperties {
+@ConfigurationProperties(prefix = "app.who-said-it")
+public class WhoSaidItProperties {
 
     /** Max characters allowed in a proposed question's content. */
     private int maxContentLength = 280;

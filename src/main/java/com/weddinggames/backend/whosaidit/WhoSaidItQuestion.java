@@ -1,4 +1,4 @@
-package com.weddinggames.backend.luiouelle;
+package com.weddinggames.backend.whosaidit;
 
 import com.weddinggames.backend.common.BaseEntity;
 import com.weddinggames.backend.common.exception.BusinessRuleViolationException;
@@ -16,28 +16,28 @@ import java.util.Map;
 import java.util.Set;
 
 /**
- * A "Lui ou Elle" question proposed by a guest about the couple, while the lobby is still open.
+ * A "Who Said It" question proposed by a guest about the couple, while the lobby is still open.
  *
  * <p>Lifecycle: PENDING -&gt; ACCEPTED/REJECTED (either can be reconsidered into the other) -&gt;
  * PLAYED once selected and used during play. PLAYED is terminal: a played question is never
  * un-played, so its content/status can no longer change.
  */
 @Entity
-@Table(name = "lui_ou_elle_question")
-public class LuiOuElleQuestion extends BaseEntity {
+@Table(name = "who_said_it_question")
+public class WhoSaidItQuestion extends BaseEntity {
 
-    private static final Map<LuiOuElleQuestionStatus, Set<LuiOuElleQuestionStatus>> ALLOWED_PREDECESSORS = Map.of(
-            LuiOuElleQuestionStatus.ACCEPTED,
+    private static final Map<WhoSaidItQuestionStatus, Set<WhoSaidItQuestionStatus>> ALLOWED_PREDECESSORS = Map.of(
+            WhoSaidItQuestionStatus.ACCEPTED,
                     Set.of(
-                            LuiOuElleQuestionStatus.PENDING,
-                            LuiOuElleQuestionStatus.REJECTED,
-                            LuiOuElleQuestionStatus.ACCEPTED),
-            LuiOuElleQuestionStatus.REJECTED,
+                            WhoSaidItQuestionStatus.PENDING,
+                            WhoSaidItQuestionStatus.REJECTED,
+                            WhoSaidItQuestionStatus.ACCEPTED),
+            WhoSaidItQuestionStatus.REJECTED,
                     Set.of(
-                            LuiOuElleQuestionStatus.PENDING,
-                            LuiOuElleQuestionStatus.ACCEPTED,
-                            LuiOuElleQuestionStatus.REJECTED),
-            LuiOuElleQuestionStatus.PLAYED, Set.of(LuiOuElleQuestionStatus.ACCEPTED));
+                            WhoSaidItQuestionStatus.PENDING,
+                            WhoSaidItQuestionStatus.ACCEPTED,
+                            WhoSaidItQuestionStatus.REJECTED),
+            WhoSaidItQuestionStatus.PLAYED, Set.of(WhoSaidItQuestionStatus.ACCEPTED));
 
     @ManyToOne(fetch = FetchType.EAGER, optional = false)
     @JoinColumn(name = "event_id", nullable = false)
@@ -52,18 +52,18 @@ public class LuiOuElleQuestion extends BaseEntity {
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 20)
-    private LuiOuElleQuestionStatus status = LuiOuElleQuestionStatus.PENDING;
+    private WhoSaidItQuestionStatus status = WhoSaidItQuestionStatus.PENDING;
 
     @Column(name = "reveal_author_consent", nullable = false)
     private boolean revealAuthorConsent;
 
-    protected LuiOuElleQuestion() {}
+    protected WhoSaidItQuestion() {}
 
-    public LuiOuElleQuestion(WeddingEvent event, Participant author, String content) {
+    public WhoSaidItQuestion(WeddingEvent event, Participant author, String content) {
         this(event, author, content, false);
     }
 
-    public LuiOuElleQuestion(WeddingEvent event, Participant author, String content, boolean revealAuthorConsent) {
+    public WhoSaidItQuestion(WeddingEvent event, Participant author, String content, boolean revealAuthorConsent) {
         this.event = event;
         this.author = author;
         this.content = content;
@@ -82,7 +82,7 @@ public class LuiOuElleQuestion extends BaseEntity {
         return content;
     }
 
-    public LuiOuElleQuestionStatus getStatus() {
+    public WhoSaidItQuestionStatus getStatus() {
         return status;
     }
 
@@ -96,8 +96,8 @@ public class LuiOuElleQuestion extends BaseEntity {
         requireNotPlayed();
         this.content = newContent;
         this.revealAuthorConsent = revealAuthorConsent;
-        if (status != LuiOuElleQuestionStatus.PENDING) {
-            status = LuiOuElleQuestionStatus.PENDING;
+        if (status != WhoSaidItQuestionStatus.PENDING) {
+            status = WhoSaidItQuestionStatus.PENDING;
         }
     }
 
@@ -108,29 +108,29 @@ public class LuiOuElleQuestion extends BaseEntity {
     }
 
     public void accept() {
-        transitionTo(LuiOuElleQuestionStatus.ACCEPTED);
+        transitionTo(WhoSaidItQuestionStatus.ACCEPTED);
     }
 
     public void reject() {
-        transitionTo(LuiOuElleQuestionStatus.REJECTED);
+        transitionTo(WhoSaidItQuestionStatus.REJECTED);
     }
 
     public void markPlayed() {
-        transitionTo(LuiOuElleQuestionStatus.PLAYED);
+        transitionTo(WhoSaidItQuestionStatus.PLAYED);
     }
 
     private void requireNotPlayed() {
-        if (status == LuiOuElleQuestionStatus.PLAYED) {
+        if (status == WhoSaidItQuestionStatus.PLAYED) {
             throw new BusinessRuleViolationException(
-                    "LUI_OU_ELLE_QUESTION_ALREADY_PLAYED", "Cette question a deja ete jouee: elle n'est plus modifiable.");
+                    "WHO_SAID_IT_QUESTION_ALREADY_PLAYED", "Cette question a deja ete jouee: elle n'est plus modifiable.");
         }
     }
 
-    private void transitionTo(LuiOuElleQuestionStatus target) {
-        Set<LuiOuElleQuestionStatus> allowedFrom = ALLOWED_PREDECESSORS.get(target);
+    private void transitionTo(WhoSaidItQuestionStatus target) {
+        Set<WhoSaidItQuestionStatus> allowedFrom = ALLOWED_PREDECESSORS.get(target);
         if (allowedFrom == null || !allowedFrom.contains(status)) {
             throw new BusinessRuleViolationException(
-                    "INVALID_LUI_OU_ELLE_QUESTION_TRANSITION",
+                    "INVALID_WHO_SAID_IT_QUESTION_TRANSITION",
                     "Impossible de passer de " + status + " a " + target + ".");
         }
         status = target;

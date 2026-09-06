@@ -1,4 +1,4 @@
-package com.weddinggames.backend.luiouelle;
+package com.weddinggames.backend.whosaidit;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -19,25 +19,25 @@ import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-/** Pure unit test (Mockito, no Spring context) for proposing/editing Lui ou Elle questions. */
-class LuiOuElleQuestionServiceTest {
+/** Pure unit test (Mockito, no Spring context) for proposing/editing Who Said It questions. */
+class WhoSaidItQuestionServiceTest {
 
-    private LuiOuElleQuestionRepository questionRepository;
+    private WhoSaidItQuestionRepository questionRepository;
     private ParticipantRepository participantRepository;
     private LobbyRepository lobbyRepository;
-    private LuiOuElleProperties properties;
-    private LuiOuElleQuestionService service;
+    private WhoSaidItProperties properties;
+    private WhoSaidItQuestionService service;
     private UUID eventId;
     private UUID participantId;
     private Participant author;
 
     @BeforeEach
     void setUp() {
-        questionRepository = mock(LuiOuElleQuestionRepository.class);
+        questionRepository = mock(WhoSaidItQuestionRepository.class);
         participantRepository = mock(ParticipantRepository.class);
         lobbyRepository = mock(LobbyRepository.class);
-        properties = new LuiOuElleProperties();
-        service = new LuiOuElleQuestionService(questionRepository, participantRepository, lobbyRepository, properties);
+        properties = new WhoSaidItProperties();
+        service = new WhoSaidItQuestionService(questionRepository, participantRepository, lobbyRepository, properties);
 
         eventId = UUID.randomUUID();
         participantId = UUID.randomUUID();
@@ -58,7 +58,7 @@ class LuiOuElleQuestionServiceTest {
     void proposesAQuestionWhenTheLobbyIsOpenAndUnderTheLimit() {
         when(questionRepository.countByAuthorId(participantId)).thenReturn(0L);
 
-        LuiOuElleQuestion question = service.propose(participantId, "Qui est le plus bordelique ?", false);
+        WhoSaidItQuestion question = service.propose(participantId, "Qui est le plus bordelique ?", false);
 
         assertThat(question.getContent()).isEqualTo("Qui est le plus bordelique ?");
         assertThat(question.getAuthor()).isEqualTo(author);
@@ -68,7 +68,7 @@ class LuiOuElleQuestionServiceTest {
     void trimsTheProposedContent() {
         when(questionRepository.countByAuthorId(participantId)).thenReturn(0L);
 
-        LuiOuElleQuestion question = service.propose(participantId, "  Qui cuisine le mieux ?  ", false);
+        WhoSaidItQuestion question = service.propose(participantId, "  Qui cuisine le mieux ?  ", false);
 
         assertThat(question.getContent()).isEqualTo("Qui cuisine le mieux ?");
     }
@@ -77,7 +77,7 @@ class LuiOuElleQuestionServiceTest {
     void carriesTheAuthorsRevealConsentThroughToThePersistedQuestion() {
         when(questionRepository.countByAuthorId(participantId)).thenReturn(0L);
 
-        LuiOuElleQuestion question = service.propose(participantId, "Qui est le plus radin ?", true);
+        WhoSaidItQuestion question = service.propose(participantId, "Qui est le plus radin ?", true);
 
         assertThat(question.isRevealAuthorConsent()).isTrue();
     }
@@ -86,10 +86,10 @@ class LuiOuElleQuestionServiceTest {
     void updatingCanChangeTheRevealConsent() {
         UUID questionId = UUID.randomUUID();
         WeddingEvent event = author.getEvent();
-        LuiOuElleQuestion existing = new LuiOuElleQuestion(event, author, "Ancienne question", false);
+        WhoSaidItQuestion existing = new WhoSaidItQuestion(event, author, "Ancienne question", false);
         when(questionRepository.findByIdAndAuthorId(questionId, participantId)).thenReturn(Optional.of(existing));
 
-        LuiOuElleQuestion updated = service.update(participantId, questionId, "Nouvelle question", true);
+        WhoSaidItQuestion updated = service.update(participantId, questionId, "Nouvelle question", true);
 
         assertThat(updated.isRevealAuthorConsent()).isTrue();
     }
@@ -143,10 +143,10 @@ class LuiOuElleQuestionServiceTest {
     void updatesMyOwnQuestionWhileTheLobbyIsOpen() {
         UUID questionId = UUID.randomUUID();
         WeddingEvent event = author.getEvent();
-        LuiOuElleQuestion existing = new LuiOuElleQuestion(event, author, "Ancienne question");
+        WhoSaidItQuestion existing = new WhoSaidItQuestion(event, author, "Ancienne question");
         when(questionRepository.findByIdAndAuthorId(questionId, participantId)).thenReturn(Optional.of(existing));
 
-        LuiOuElleQuestion updated = service.update(participantId, questionId, "Nouvelle question", false);
+        WhoSaidItQuestion updated = service.update(participantId, questionId, "Nouvelle question", false);
 
         assertThat(updated.getContent()).isEqualTo("Nouvelle question");
     }
@@ -164,20 +164,20 @@ class LuiOuElleQuestionServiceTest {
     void editingAnAlreadyModeratedQuestionResetsItToPendingForReReview() {
         UUID questionId = UUID.randomUUID();
         WeddingEvent event = author.getEvent();
-        LuiOuElleQuestion existing = new LuiOuElleQuestion(event, author, "Ancienne question");
+        WhoSaidItQuestion existing = new WhoSaidItQuestion(event, author, "Ancienne question");
         existing.accept();
         when(questionRepository.findByIdAndAuthorId(questionId, participantId)).thenReturn(Optional.of(existing));
 
-        LuiOuElleQuestion updated = service.update(participantId, questionId, "Nouvelle question", false);
+        WhoSaidItQuestion updated = service.update(participantId, questionId, "Nouvelle question", false);
 
-        assertThat(updated.getStatus()).isEqualTo(LuiOuElleQuestionStatus.PENDING);
+        assertThat(updated.getStatus()).isEqualTo(WhoSaidItQuestionStatus.PENDING);
     }
 
     @Test
     void rejectsUpdatingOnceTheLobbyIsNoLongerOpen() {
         UUID questionId = UUID.randomUUID();
         WeddingEvent event = author.getEvent();
-        LuiOuElleQuestion existing = new LuiOuElleQuestion(event, author, "Ancienne question");
+        WhoSaidItQuestion existing = new WhoSaidItQuestion(event, author, "Ancienne question");
         when(questionRepository.findByIdAndAuthorId(questionId, participantId)).thenReturn(Optional.of(existing));
         Lobby lockedLobby = new Lobby(event);
         lockedLobby.open(Instant.now());
