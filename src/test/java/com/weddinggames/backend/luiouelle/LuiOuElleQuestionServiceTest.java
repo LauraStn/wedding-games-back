@@ -140,6 +140,19 @@ class LuiOuElleQuestionServiceTest {
     }
 
     @Test
+    void editingAnAlreadyModeratedQuestionResetsItToPendingForReReview() {
+        UUID questionId = UUID.randomUUID();
+        WeddingEvent event = author.getEvent();
+        LuiOuElleQuestion existing = new LuiOuElleQuestion(event, author, "Ancienne question");
+        existing.accept();
+        when(questionRepository.findByIdAndAuthorId(questionId, participantId)).thenReturn(Optional.of(existing));
+
+        LuiOuElleQuestion updated = service.update(participantId, questionId, "Nouvelle question");
+
+        assertThat(updated.getStatus()).isEqualTo(LuiOuElleQuestionStatus.PENDING);
+    }
+
+    @Test
     void rejectsUpdatingOnceTheLobbyIsNoLongerOpen() {
         UUID questionId = UUID.randomUUID();
         WeddingEvent event = author.getEvent();

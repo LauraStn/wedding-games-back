@@ -15,10 +15,9 @@ import org.springframework.transaction.annotation.Transactional;
 
 /**
  * Lets a guest propose (and, while the lobby is still open, edit) up to a configurable number of
- * "Lui ou Elle" questions about the couple. Moderation, random selection for play, and the
- * author-reveal consent are handled by their own tickets/services downstream of this one - a
- * question here has no status yet, on purpose: it is added when moderation needs it, the same way
- * {@code Answer} only grew a moderation status in its own later ticket.
+ * "Lui ou Elle" questions about the couple. Moderation (see {@link LuiOuElleModerationService}),
+ * random selection for play, and the author-reveal consent are handled by their own
+ * tickets/services downstream of this one.
  */
 @Service
 public class LuiOuElleQuestionService {
@@ -72,7 +71,7 @@ public class LuiOuElleQuestionService {
         requireLobbyOpen(question.getEvent().getId());
         requireValidContent(content);
 
-        question.setContent(content.trim());
+        question.reviseByAuthor(content.trim());
         return question;
     }
 
