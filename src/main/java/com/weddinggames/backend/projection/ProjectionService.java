@@ -106,7 +106,11 @@ public class ProjectionService {
                 scoreService.podium(eventId));
     }
 
-    /** The most recently touched (highest-sequence) non-pending question of the active game. */
+    /**
+     * The most recently touched (highest-sequence) non-pending question of the active game. Kept in
+     * step with {@link com.weddinggames.backend.game.CurrentGameService}, which exposes the same
+     * "what is live" answer to guests - change both together.
+     */
     private Question currentQuestion(Game game) {
         List<Question> questions = questionRepository.findByGameIdOrderBySequence(game.getId());
         Question current = null;

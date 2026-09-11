@@ -2,6 +2,7 @@ package com.weddinggames.backend.lobby;
 
 import com.weddinggames.backend.lobby.dto.LobbyParticipantResponse;
 import com.weddinggames.backend.lobby.dto.LobbyResponse;
+import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import java.util.List;
 import java.util.UUID;
@@ -22,6 +23,12 @@ public class LobbyStaffController {
 
     public LobbyStaffController(LobbyService lobbyService) {
         this.lobbyService = lobbyService;
+    }
+
+    @GetMapping
+    @Operation(summary = "Etat courant du salon (statut, horodatage d'ouverture/fermeture) pour le bandeau intervenant")
+    public LobbyResponse get(@PathVariable UUID eventId) {
+        return LobbyResponse.from(lobbyService.getOrCreate(eventId));
     }
 
     @PostMapping("/open")

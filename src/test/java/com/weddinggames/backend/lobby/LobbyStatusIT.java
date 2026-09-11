@@ -84,6 +84,26 @@ class LobbyStatusIT extends AbstractIntegrationTest {
     }
 
     @Test
+    void intervenantCanReadTheLobbyStatusWithoutFirstDrivingATransition() throws Exception {
+        Cookie intervenantCookie = loginAsNewStaff(StaffRole.INTERVENANT);
+        WeddingEvent event = createEvent();
+
+        // No open/lock/start call first: the GET must still return the (freshly created) lobby, CLOSED.
+        mockMvc.perform(get("/api/v1/staff/events/{eventId}/lobby", event.getId()).cookie(intervenantCookie))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.eventId").value(event.getId().toString()))
+                .andExpect(jsonPath("$.status").value("CLOSED"));
+
+        mockMvc.perform(post("/api/v1/staff/events/{eventId}/lobby/open", event.getId()).cookie(intervenantCookie))
+                .andExpect(status().isOk());
+
+        mockMvc.perform(get("/api/v1/staff/events/{eventId}/lobby", event.getId()).cookie(intervenantCookie))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("OPEN"))
+                .andExpect(jsonPath("$.openedAt").isNotEmpty());
+    }
+
+    @Test
     void participantSeesTheLobbyStatusPresentCountAndWelcomeMessageWithoutStaffData() throws Exception {
         Cookie adminCookie = loginAsNewStaff(StaffRole.ADMIN);
         WeddingEvent event = createEvent();

@@ -408,6 +408,7 @@ Base : `/api/v1/staff/events/{eventId}/lobby`
 
 | Méthode | Route | Description | Réponse |
 |---|---|---|---|
+| `GET` | `/` | État courant du salon (statut, `openedAt`/`closedAt`) — pour le bandeau intervenant, sans avoir à déclencher de transition | `LobbyResponse` |
 | `POST` | `/open` | Ouvre le salon (statut → `OPEN`) | `LobbyResponse` |
 | `POST` | `/close` | Ferme le salon (statut → `CLOSED`) | `LobbyResponse` |
 | `POST` | `/lock` | Verrouille le salon (statut → `LOCKED`, plus d'admission) | `LobbyResponse` |
@@ -1062,6 +1063,31 @@ Erreurs : `409 GAME_NOT_ACTIVE`, `409 INVALID_GAME_STATUS_TRANSITION`,
 > Avant de piloter une partie, un intervenant doit généralement en avoir la main exclusive — voir
 > [section 24, Verrou de contrôle](#24-verrou-de-contrôle).
 
+### Participant — jeu en cours
+
+#### `GET /api/v1/games/current` — **rôle `PARTICIPANT`**
+
+Ce que la salle joue **maintenant**, pour l'écran de l'invité. C'est le seul endpoint qui expose
+au participant l'`id` de la question active : à poller (ex. toutes les 3-5s) pour savoir quand
+basculer vers l'écran de réponse (`/quiz/questions/{questionId}/answer`, question `ACTIVE`) ou de
+vote (`/vote/questions/{questionId}/...`, question `CLOSED`).
+
+L'événement est déduit de la session — aucun paramètre. **Jamais `404`** : quand rien n'est
+lancé, les deux champs valent `null`.
+
+**Réponse `200`** — `CurrentGameResponse` :
+
+```json
+{
+  "game": { "id": "uuid", "eventId": "uuid", "type": "QUIZ", "title": "Quiz absurde", "sequence": 0, "status": "ACTIVE", "phase": "QUESTION" },
+  "question": { "id": "uuid", "sequence": 0, "status": "ACTIVE", "prompt": "Quel est le comble pour un électricien ?" }
+}
+```
+
+- `game` est `null` tant qu'aucune partie n'est `ACTIVE`/`PAUSED` ;
+- `question` est `null` tant que la partie active n'a pas encore activé de question (phase
+  `PREPARATION`). `question.status` : `ACTIVE` = réponse en cours, `CLOSED` = vote ouvert.
+
 ---
 
 ## 16. Questions
@@ -1506,6 +1532,7 @@ d'invitations.
 | `POST /api/v1/session/logout` | Aucune (idempotent) |
 | `/api/v1/lobby/**` | `PARTICIPANT` |
 | `/api/v1/team/me` | `PARTICIPANT` |
+| `GET /api/v1/games/current` | `PARTICIPANT` |
 | `/api/v1/quiz/**` | `PARTICIPANT` |
 | `/api/v1/vote/**` | `PARTICIPANT` |
 | `/api/v1/who-said-it/questions/**` (proposition) | `PARTICIPANT` |
